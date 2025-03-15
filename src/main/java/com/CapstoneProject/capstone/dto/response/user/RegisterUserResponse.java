@@ -1,4 +1,4 @@
-package com.CapstoneProject.capstone.dto.request;
+package com.CapstoneProject.capstone.dto.response.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,5 +9,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class RegisterRequest {
+public class RegisterUserResponse {
+    private String username;
+    private String email;
 }
