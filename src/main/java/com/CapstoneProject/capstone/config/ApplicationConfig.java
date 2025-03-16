@@ -23,8 +23,9 @@ public class ApplicationConfig {
     @Bean
     public UserDetailsService userDetailsService(){
         return username -> userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("Tên đăng nhập không tồn tại"));
     }
+
 
     @Bean
     public AuthenticationProvider authenticationProvider(){

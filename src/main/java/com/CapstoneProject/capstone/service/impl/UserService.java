@@ -23,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -57,6 +58,9 @@ public class UserService implements IUserService {
         }
         User user = userMapper.toModel(request.getUser());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        user.setActive(true);
         userRepository.save(user);
         UserProfile userProfile = userMapper.toProfile(request.getUserInfo());
         userProfile.setUser(user);

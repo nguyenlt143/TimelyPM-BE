@@ -14,7 +14,5 @@ public class RegisterUserInfoRequest {
     private String avatarUrl;
     private String gender;
     private String phone;
-    private String firstName;
-    private String lastName;
     private String fullName;
 }

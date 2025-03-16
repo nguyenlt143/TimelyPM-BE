@@ -4,6 +4,7 @@ import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,6 +26,13 @@ public class GlobalExceptionHandler {
         response.setData(null);
 
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    //Bắt lỗi đăng nhập sai
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<BaseResponse<Void>> handleBadCredentialsException(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new BaseResponse<>("401", "Tên đăng nhập hoặc mật khẩu không đúng", null));
     }
 
     //Validation(Null, Size, Email)
@@ -63,5 +71,11 @@ public class GlobalExceptionHandler {
         response.setData(null);
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<BaseResponse<Void>> handleGeneralException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new BaseResponse<>("500", "Lỗi máy chủ", null));
     }
 }

@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.model;
 
 import com.CapstoneProject.capstone.enums.GenderEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
@@ -18,10 +19,9 @@ public class UserProfile extends BaseEntity {
     private String avatarUrl;
     private String gender;
     private String phone;
-    private String firstName;
-    private String lastName;
     private String fullName;
     @OneToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     User user;
 }

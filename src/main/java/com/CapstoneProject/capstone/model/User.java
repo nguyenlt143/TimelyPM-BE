@@ -28,16 +28,21 @@ public class User extends BaseEntity implements UserDetails {
     @OneToMany(mappedBy = "user")
     private List<UserRole> userRoles;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return userRoles.stream()
-                .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getName()))
-                .collect(Collectors.toList());
-    }
+//    @Override
+//    public Collection<? extends GrantedAuthority> getAuthorities() {
+//        return userRoles.stream()
+//                .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getName()))
+//                .collect(Collectors.toList());
+//    }
 
     @Override
     public String getUsername() {
         return username;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
     }
 
     @Override
