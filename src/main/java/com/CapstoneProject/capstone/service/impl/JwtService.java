@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import com.CapstoneProject.capstone.model.User;
@@ -19,7 +20,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
-
     private String SECRET_KEY = "A3F9C7D28E45B671F04A98D3BC56E21F7D8A32B5C4E690FA1B3D7E82564F90CD";
 
     public String extractUserName(String token) {
@@ -35,7 +35,7 @@ public class JwtService {
         Map<String, Object> extraClaims = new HashMap<>();
         if (userDetails instanceof User user) {
             List<String> roles = user.getUserRoles().stream()
-                    .map(userRole -> userRole.getRole().getName())
+                    .map(userRole -> userRole.getRole().getName().name())
                     .collect(Collectors.toList());
             extraClaims.put("username", user.getUsername());
             extraClaims.put("roles", roles);

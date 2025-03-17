@@ -5,6 +5,7 @@ import com.CapstoneProject.capstone.dto.request.project.UpdateProjectRequest;
 import com.CapstoneProject.capstone.dto.response.project.CreateNewProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
+import com.CapstoneProject.capstone.enums.RoleEnum;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,4 +16,6 @@ public interface IProjectService {
     GetProjectResponse getProjectById(UUID id);
     boolean deleteProjectById(UUID id);
     UpdateProjectResponse updateProjectById(UUID id, UpdateProjectRequest request);
+    boolean inviteUserToProject(UUID projectId, UUID id, String role);
+    boolean deleteUserFromProject(UUID projectId, UUID id);
 }
