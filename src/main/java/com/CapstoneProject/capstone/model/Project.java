@@ -21,6 +21,7 @@ public class Project extends BaseEntity {
     private String name;
     private String image;
     private String status;
+    private String code;
     @OneToMany(mappedBy = "project")
     private List<Notification> notifications;
     @OneToMany(mappedBy = "project")

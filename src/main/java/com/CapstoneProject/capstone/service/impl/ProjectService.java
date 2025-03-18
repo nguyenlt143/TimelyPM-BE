@@ -8,6 +8,7 @@ import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
 import com.CapstoneProject.capstone.enums.GenderEnum;
 import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
 import com.CapstoneProject.capstone.enums.RoleEnum;
+import com.CapstoneProject.capstone.exception.ForbiddenException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.mapper.ProjectMapper;
@@ -19,6 +20,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +53,7 @@ public class ProjectService implements IProjectService {
 
         Project project = projectMapper.toProject(request);
         project.setUserProfile(userProfile);
+        project.setCode(UUID.randomUUID().toString().replaceAll("[^a-zA-Z0-9]", "").substring(0, 6));
         project.setCreatedAt(LocalDateTime.now());
         project.setUpdatedAt(LocalDateTime.now());
         project.setActive(true);
@@ -72,13 +75,15 @@ public class ProjectService implements IProjectService {
     @Override
     public List<GetProjectResponse> getAllProjects() {
         List<Project> projects = projectRepository.getAllProjects();
-        return projects.stream().map(projectMapper::toGetResponse).collect(Collectors.toList());
+        return projects.stream().map(GetProjectResponse::new).collect(Collectors.toList());
     }
 
     @Override
     public GetProjectResponse getProjectById(UUID id) {
         Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này"));
-        return projectMapper.toGetResponse(project);
+        GetProjectResponse response = projectMapper.toGetResponse(project);
+        response.setUserId(project.getUserProfile().getUser().getId());
+        return response;
     }
 
     @Override
@@ -125,7 +130,7 @@ public class ProjectService implements IProjectService {
 
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
         if(!pmUser.getId().equals(userId)){
-            throw new NotFoundException("Bạn không có quyền");
+            throw new ForbiddenException("Bạn không có quyền");
         }
 
         User userInvite = userRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
@@ -156,7 +161,7 @@ public class ProjectService implements IProjectService {
 
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
         if(!pmUser.getId().equals(userId)){
-            throw new NotFoundException("Bạn không có quyền");
+            throw new ForbiddenException("Bạn không có quyền");
         }
 
         User userDelete = userRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));

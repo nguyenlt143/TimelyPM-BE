@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.dto.response.project;
 
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
+import com.CapstoneProject.capstone.model.Project;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,5 +18,14 @@ public class GetProjectResponse {
     private String name;
     private String image;
     private String status;
-    private GetProfileResponse profile;
+    private UUID userId;
+    public GetProjectResponse(Project project) {
+        this.id = project.getId();
+        this.name = project.getName();
+        this.image = project.getImage();
+        this.status = project.getStatus();
+        this.userId = (project.getUserProfile() != null && project.getUserProfile().getUser() != null)
+                ? project.getUserProfile().getUser().getId()
+                : null;
+    }
 }
