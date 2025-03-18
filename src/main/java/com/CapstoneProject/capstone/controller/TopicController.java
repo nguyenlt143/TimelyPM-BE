@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TopicController {
     private final ITopicService topicService;
-    @PostMapping(UrlConstant.PROJECT.CREATE)
+    @PostMapping(UrlConstant.TOPIC.CREATE)
     public ResponseEntity<BaseResponse<CreateNewTopicResponse>> create(@Valid @RequestBody CreateNewTopicRequest request) {
         CreateNewTopicResponse response = topicService.createNewTopic(request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Tạo topic thành công", response));

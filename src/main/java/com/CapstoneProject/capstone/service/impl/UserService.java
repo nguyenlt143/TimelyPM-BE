@@ -3,6 +3,7 @@ package com.CapstoneProject.capstone.service.impl;
 import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
 import com.CapstoneProject.capstone.dto.response.auth.AuthenticateResponse;
+import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.enums.GenderEnum;
 import com.CapstoneProject.capstone.enums.RoleEnum;
@@ -10,6 +11,7 @@ import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.exception.UserExisted;
 import com.CapstoneProject.capstone.mapper.UserMapper;
+import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.Role;
 import com.CapstoneProject.capstone.model.User;
 import com.CapstoneProject.capstone.model.UserProfile;
@@ -19,6 +21,7 @@ import com.CapstoneProject.capstone.repository.UserProfileRepository;
 import com.CapstoneProject.capstone.repository.UserRepository;
 import com.CapstoneProject.capstone.repository.UserRoleRepository;
 import com.CapstoneProject.capstone.service.IUserService;
+import com.CapstoneProject.capstone.util.AuthenUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,9 +31,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +44,7 @@ public class UserService implements IUserService {
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final UserProfileMapper userProfileMapper;
 
     @Override
     @Transactional
@@ -106,6 +108,16 @@ public class UserService implements IUserService {
         response.setId(user.getId());
         response.setUsername(user.getUsername());
 //        response.setRole(roles);
+        return response;
+    }
+
+    @Override
+    public GetUserResponse getUser() {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found!"));
+        UserProfile userProfile = userProfileRepository.findByUserId(userId).orElseThrow(() -> new NotFoundException("Profile not found!"));
+        GetUserResponse response = userMapper.getUserResponse(user);
+        response.setProfile(userProfileMapper.toProfile(userProfile));
         return response;
     }
 }

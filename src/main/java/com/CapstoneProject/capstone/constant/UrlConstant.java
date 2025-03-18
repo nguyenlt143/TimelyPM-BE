@@ -7,6 +7,7 @@ public class UrlConstant {
         public static final String USER = API + "/user";
         public static final String REGISTER = "/register";
         public static final String LOGIN = "/auth";
+        public static final String GET = "";
     }
 
     public static class PROJECT {

@@ -5,6 +5,7 @@ import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.auth.AuthenticateResponse;
+import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.service.IUserService;
 import jakarta.validation.Valid;
@@ -13,10 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(UrlConstant.USER.USER)
@@ -33,5 +31,11 @@ public class UserController {
     public ResponseEntity<BaseResponse<AuthenticateResponse>> authenticate(@RequestBody @Valid AuthenticateRequest request) {
         AuthenticateResponse data = userService.authenticateUser(request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Đăng nhập thành công", data));
+    }
+
+    @GetMapping(UrlConstant.USER.GET)
+    public ResponseEntity<BaseResponse<GetUserResponse>> getUser() {
+        GetUserResponse data = userService.getUser();
+        return ResponseEntity.ok(new BaseResponse<>("200", "Hồ sơ người dùng", data));
     }
 }
