@@ -17,8 +17,7 @@ import java.util.List;
 @Getter
 @Setter
 public class Topic extends BaseEntity{
-    private TopicTypeEnum type;
-    private String summary;
+    private String type;
     private String description;
     private String labels;
     private LocalDateTime startDate;

@@ -7,8 +7,7 @@ import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.project.CreateNewProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
-import com.CapstoneProject.capstone.model.Project;
-import com.CapstoneProject.capstone.service.impl.ProjectService;
+import com.CapstoneProject.capstone.service.IProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,7 @@ import java.util.UUID;
 @RequestMapping(UrlConstant.PROJECT.PROJECT)
 @RequiredArgsConstructor
 public class ProjectController {
-    private final ProjectService projectService;
+    private final IProjectService projectService;
 
     @PostMapping(UrlConstant.PROJECT.CREATE)
     public ResponseEntity<BaseResponse<CreateNewProjectResponse>> create(@Valid @RequestBody CreateNewProjectRequest request) {

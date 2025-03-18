@@ -20,4 +20,10 @@ public class UrlConstant {
         public static final String DELETE_MEMBER = "/{id}/delete/member";
     }
 
+    public static class TOPIC {
+        public static final String TOPIC = API + "/topic";
+        public static final String CREATE = "/create";
+        public static final String GET_TOPICS = "";
+    }
+
 }
