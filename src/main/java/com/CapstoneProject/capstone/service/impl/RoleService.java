@@ -19,10 +19,9 @@ public class RoleService {
         if (roleRepository.count() == 0) {
             roleRepository.saveAll(List.of(
                     new Role(null, RoleEnum.ADMIN, null),
-                    new Role(null, RoleEnum.BA, null),
+                    new Role(null, RoleEnum.QA, null),
                     new Role(null, RoleEnum.DEV, null),
                     new Role(null, RoleEnum.PM, null),
-                    new Role(null, RoleEnum.TESTER, null),
                     new Role(null, RoleEnum.USER, null)
             ));
         }

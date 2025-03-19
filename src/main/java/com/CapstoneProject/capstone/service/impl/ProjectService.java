@@ -121,7 +121,7 @@ public class ProjectService implements IProjectService {
         try {
             roleEnum = RoleEnum.valueOf(role.toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            throw new InvalidEnumException("Vai trò không hợp lệ");
+            throw new InvalidEnumException("Vai trò không hợp lệ, chỉ được QA, DEV");
         }
 
         UUID userId = AuthenUtil.getCurrentUserId();

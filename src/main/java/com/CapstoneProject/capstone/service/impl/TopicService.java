@@ -8,14 +8,8 @@ import com.CapstoneProject.capstone.exception.ForbiddenException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.mapper.TopicMapper;
-import com.CapstoneProject.capstone.model.Project;
-import com.CapstoneProject.capstone.model.ProjectMember;
-import com.CapstoneProject.capstone.model.Topic;
-import com.CapstoneProject.capstone.model.User;
-import com.CapstoneProject.capstone.repository.ProjectMemberRepository;
-import com.CapstoneProject.capstone.repository.ProjectRepository;
-import com.CapstoneProject.capstone.repository.TopicRepository;
-import com.CapstoneProject.capstone.repository.UserRepository;
+import com.CapstoneProject.capstone.model.*;
+import com.CapstoneProject.capstone.repository.*;
 import com.CapstoneProject.capstone.service.ITopicService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +28,9 @@ public class TopicService implements ITopicService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final TaskRepository taskRepository;
+    private final IssueRepository issueRepository;
+    private final QuestionRepository questionRepository;
     @Override
     public CreateNewTopicResponse createNewTopic(CreateNewTopicRequest request) {
         Project project = projectRepository.findById(request.getProjectId()).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
@@ -49,7 +46,7 @@ public class TopicService implements ITopicService {
         try {
             topicTypeEnum = TopicTypeEnum.valueOf(request.getType().toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            throw new InvalidEnumException("Loại topic không hợp lệ! Chỉ chấp nhận TASK, ISSUE");
+            throw new InvalidEnumException("Loại topic không hợp lệ! Chỉ chấp nhận TASK, ISSUE, QUESTION");
         }
 
         Topic topic = topicMapper.toTopic(request);
@@ -57,6 +54,32 @@ public class TopicService implements ITopicService {
         topic.setCreatedAt(LocalDateTime.now());
         topic.setUpdatedAt(LocalDateTime.now());
         topicRepository.save(topic);
+        if (topicTypeEnum.name().equals("TASK")){
+            Task newTask = new Task();
+            newTask.setTopic(topic);
+            newTask.setCreatedAt(LocalDateTime.now());
+            newTask.setUpdatedAt(LocalDateTime.now());
+            newTask.setActive(true);
+            taskRepository.save(newTask);
+        }
+
+        if (topicTypeEnum.name().equals("ISSUE")){
+            Issue newIssue = new Issue();
+            newIssue.setTopic(topic);
+            newIssue.setCreatedAt(LocalDateTime.now());
+            newIssue.setUpdatedAt(LocalDateTime.now());
+            newIssue.setActive(true);
+            issueRepository.save(newIssue);
+        }
+
+        if (topicTypeEnum.name().equals("QUESTION")){
+            Question newQuestion = new Question();
+            newQuestion.setTopic(topic);
+            newQuestion.setCreatedAt(LocalDateTime.now());
+            newQuestion.setUpdatedAt(LocalDateTime.now());
+            newQuestion.setActive(true);
+            questionRepository.save(newQuestion);
+        }
         CreateNewTopicResponse createNewTopicResponse = topicMapper.toResponse(topic);
         return createNewTopicResponse;
     }
@@ -69,4 +92,5 @@ public class TopicService implements ITopicService {
         List<Topic> topics = topicRepository.findAll(projectMember.getProject().getId());
         return topics.stream().map(topicMapper::topicResponse).collect(Collectors.toList());
     }
+
 }

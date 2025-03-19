@@ -5,7 +5,6 @@ public enum RoleEnum {
     ADMIN,
     PM,
     DEV,
-    TESTER,
-    BA
+    QA
 
 }
