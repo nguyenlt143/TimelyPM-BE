@@ -50,38 +50,13 @@ public class TopicService implements ITopicService {
         }
 
         Topic topic = topicMapper.toTopic(request);
+        System.out.println("Before saving - Topic ID: " + topic.getId());
+        System.out.println("Project ID: " + topic.getProject());
         topic.setActive(true);
         topic.setCreatedAt(LocalDateTime.now());
         topic.setUpdatedAt(LocalDateTime.now());
         topicRepository.save(topic);
-//        if (topicTypeEnum.name().equals("TASK")){
-//            Task newTask = new Task();
-//            newTask.setTopic(topic);
-//            newTask.setCreatedAt(LocalDateTime.now());
-//            newTask.setUpdatedAt(LocalDateTime.now());
-//            newTask.setActive(true);
-//            taskRepository.save(newTask);
-//        }
-//
-//        if (topicTypeEnum.name().equals("ISSUE")){
-//            Issue newIssue = new Issue();
-//            newIssue.setTopic(topic);
-//            newIssue.setCreatedAt(LocalDateTime.now());
-//            newIssue.setUpdatedAt(LocalDateTime.now());
-//            newIssue.setActive(true);
-//            issueRepository.save(newIssue);
-//        }
-//
-//        if (topicTypeEnum.name().equals("QUESTION")){
-//            Question newQuestion = new Question();
-//            newQuestion.setTopic(topic);
-//            newQuestion.setCreatedAt(LocalDateTime.now());
-//            newQuestion.setUpdatedAt(LocalDateTime.now());
-//            newQuestion.setActive(true);
-//            questionRepository.save(newQuestion);
-//        }
-        CreateNewTopicResponse createNewTopicResponse = topicMapper.toResponse(topic);
-        return createNewTopicResponse;
+        return topicMapper.toResponse(topic);
     }
 
     @Override

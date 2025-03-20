@@ -52,9 +52,9 @@ public class TaskService implements ITaskService {
         task.setActive(true);
         task.setStatus(StatusEnum.OPEN);
         taskRepository.save(task);
-        User user = userRepository.findById(request.getAssigneeTo()).get();
+        User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
-        UserProfile userProfile = profileRepository.findByUserId(request.getAssigneeTo()).get();
+        UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
         userResponse.setProfile(profileResponse);
         CreateNewTaskResponse createNewTaskResponse = taskMapper.toResponse(task);

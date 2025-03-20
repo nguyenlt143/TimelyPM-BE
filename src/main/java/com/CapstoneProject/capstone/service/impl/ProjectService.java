@@ -53,10 +53,8 @@ public class ProjectService implements IProjectService {
 
         Project project = projectMapper.toProject(request);
         project.setUserProfile(userProfile);
-<<<<<<< HEAD
-=======
+
         project.setCode(UUID.randomUUID().toString().replaceAll("[^a-zA-Z0-9]", "").substring(0, 6));
->>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
         project.setCreatedAt(LocalDateTime.now());
         project.setUpdatedAt(LocalDateTime.now());
         project.setActive(true);
@@ -124,11 +122,7 @@ public class ProjectService implements IProjectService {
         try {
             roleEnum = RoleEnum.valueOf(role.toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-<<<<<<< HEAD
-            throw new InvalidEnumException("Vai trò không hợp lệ");
-=======
             throw new InvalidEnumException("Vai trò không hợp lệ, chỉ được QA, DEV");
->>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
         }
 
         UUID userId = AuthenUtil.getCurrentUserId();
@@ -168,11 +162,7 @@ public class ProjectService implements IProjectService {
 
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
         if(!pmUser.getId().equals(userId)){
-<<<<<<< HEAD
-            throw new NotFoundException("Bạn không có quyền");
-=======
             throw new ForbiddenException("Bạn không có quyền");
->>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
         }
 
         User userDelete = userRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));

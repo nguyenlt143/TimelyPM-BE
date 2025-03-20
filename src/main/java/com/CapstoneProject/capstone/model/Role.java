@@ -18,11 +18,7 @@ public class Role{
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @Enumerated(EnumType.STRING)
-<<<<<<< HEAD
-    @Column(columnDefinition = "ENUM('ADMIN', 'BA', 'DEV', 'PM', 'TESTER', 'USER')")
-=======
     @Column(columnDefinition = "ENUM('ADMIN', 'QA', 'DEV', 'PM', 'USER')")
->>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
     private RoleEnum name;
     @OneToMany(mappedBy = "role")
     private List<UserRole> userRoles;

@@ -15,7 +15,6 @@ import java.util.UUID;
 public class GetUserResponse {
     private UUID id;
     private String username;
-    private String password;
     private String email;
     private GetProfileResponse profile;
 }

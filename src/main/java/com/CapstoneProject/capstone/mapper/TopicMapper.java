@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.PropertyMap;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Component;
 public class TopicMapper {
     ModelMapper modelMapper;
     public Topic toTopic(CreateNewTopicRequest request) {
-        return modelMapper.map(request, Topic.class);
+        Topic topic = modelMapper.map(request, Topic.class);
+        topic.setId(null);
+        return topic;
     }
 
     public CreateNewTopicResponse toResponse(Topic topic) {

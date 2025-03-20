@@ -22,4 +22,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         LIMIT 1
     """, nativeQuery = true)
     Optional<User> findUserWithRolePMByProjectId(@Param("projectId") UUID projectId);
+
+
 }

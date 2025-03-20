@@ -63,16 +63,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<BaseResponse<?>> handleForbiddenException(ForbiddenException ex) {
-        BaseResponse<?> response = new BaseResponse<>();
-        response.setCode(HttpStatus.FORBIDDEN.toString());
-        response.setMessage(ex.getMessage());
-        response.setData(null);
-
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-    }
-
     @ExceptionHandler(UserExisted.class)
     public ResponseEntity<BaseResponse<?>> handleUserExisted(UserExisted ex) {
         BaseResponse<?> response = new BaseResponse<>();
