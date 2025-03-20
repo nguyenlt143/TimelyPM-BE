@@ -8,10 +8,9 @@ import com.CapstoneProject.capstone.service.ITaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping(UrlConstant.TASK.TASK)
@@ -20,8 +19,8 @@ public class TaskController {
     private final ITaskService taskService;
 
     @PostMapping(UrlConstant.TASK.CREATE)
-    public ResponseEntity<BaseResponse<CreateNewTaskResponse>> create(@Valid @RequestBody CreateNewTaskRequest request) {
-        CreateNewTaskResponse response = taskService.createNewTask(request);
+    public ResponseEntity<BaseResponse<CreateNewTaskResponse>> create(@RequestParam UUID topicId, @Valid @RequestBody CreateNewTaskRequest request) {
+        CreateNewTaskResponse response = taskService.createNewTask(topicId, request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Tạo topic thành công", response));
     }
 }

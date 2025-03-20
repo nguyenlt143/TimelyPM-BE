@@ -13,7 +13,6 @@ import java.util.UUID;
 @Getter
 @Setter
 public class CreateNewTaskRequest {
-    private UUID topicId;
     private UUID assigneeTo;
     private String label;
     private String summer;

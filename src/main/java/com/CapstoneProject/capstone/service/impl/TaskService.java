@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +35,7 @@ public class TaskService implements ITaskService {
     private final UserProfileRepository profileRepository;
 
     @Override
-    public CreateNewTaskResponse createNewTask(CreateNewTaskRequest request) {
+    public CreateNewTaskResponse createNewTask(UUID topicId, CreateNewTaskRequest request) {
         String priorityStr = request.getPriority();
         PriorityEnum priority;
         try {
@@ -42,7 +43,7 @@ public class TaskService implements ITaskService {
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new InvalidEnumException("Priority không hợp lệ! Chỉ chấp nhận LOW, MEDIUM, HIGH.");
         }
-        Topic topic = topicRepository.findById(request.getTopicId()).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+        Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
         ProjectMember projectMember = projectMemberRepository.findProjectMember(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
         Task task = taskMapper.toModel(request);
         task.setTopic(topic);
