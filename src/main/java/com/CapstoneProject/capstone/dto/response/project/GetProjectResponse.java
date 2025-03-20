@@ -1,8 +1,11 @@
 package com.CapstoneProject.capstone.dto.response.project;
 
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
+<<<<<<< HEAD
+=======
 import com.CapstoneProject.capstone.model.Project;
 import com.CapstoneProject.capstone.model.Topic;
+>>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +23,9 @@ public class GetProjectResponse {
     private String name;
     private String image;
     private String status;
+<<<<<<< HEAD
+    private GetProfileResponse profile;
+=======
     private UUID userId;
     private List<Topic> topics;
     public GetProjectResponse(Project project) {
@@ -32,4 +38,5 @@ public class GetProjectResponse {
                 : null;
         this.topics = project.getTopics();
     }
+>>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
 }

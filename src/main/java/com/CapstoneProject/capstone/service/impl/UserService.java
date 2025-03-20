@@ -11,7 +11,10 @@ import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.exception.UserExisted;
 import com.CapstoneProject.capstone.mapper.UserMapper;
+<<<<<<< HEAD
+=======
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
+>>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
 import com.CapstoneProject.capstone.model.Role;
 import com.CapstoneProject.capstone.model.User;
 import com.CapstoneProject.capstone.model.UserProfile;
@@ -44,7 +47,10 @@ public class UserService implements IUserService {
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+<<<<<<< HEAD
+=======
     private final UserProfileMapper userProfileMapper;
+>>>>>>> a17adb759a5f60a26e573478b71627fc5b7fb7d8
 
     @Override
     @Transactional
