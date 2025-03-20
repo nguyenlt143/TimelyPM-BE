@@ -27,6 +27,8 @@ public class User extends BaseEntity implements UserDetails {
     private List<Notification> notifications;
     @OneToMany(mappedBy = "user")
     private List<UserRole> userRoles;
+    @OneToMany(mappedBy = "user")
+    private List<ProjectMember> projectMembers;
 
 //    @Override
 //    public Collection<? extends GrantedAuthority> getAuthorities() {

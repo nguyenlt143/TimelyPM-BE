@@ -1,5 +1,11 @@
 package com.CapstoneProject.capstone.enums;
 
 public enum RoleEnum {
-    USER
+    USER,
+    ADMIN,
+    PM,
+    DEV,
+    TESTER,
+    BA
+
 }

@@ -1,21 +1,25 @@
 package com.CapstoneProject.capstone.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.CapstoneProject.capstone.enums.RoleEnum;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Role extends BaseEntity {
-    private String name;
+@Builder
+public class Role{
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "ENUM('ADMIN', 'BA', 'DEV', 'PM', 'TESTER', 'USER')")
+    private RoleEnum name;
     @OneToMany(mappedBy = "role")
     private List<UserRole> userRoles;
 }

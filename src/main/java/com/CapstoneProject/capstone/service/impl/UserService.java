@@ -5,15 +5,19 @@ import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
 import com.CapstoneProject.capstone.dto.response.auth.AuthenticateResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.enums.GenderEnum;
+import com.CapstoneProject.capstone.enums.RoleEnum;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.exception.UserExisted;
 import com.CapstoneProject.capstone.mapper.UserMapper;
+import com.CapstoneProject.capstone.model.Role;
 import com.CapstoneProject.capstone.model.User;
 import com.CapstoneProject.capstone.model.UserProfile;
 import com.CapstoneProject.capstone.model.UserRole;
+import com.CapstoneProject.capstone.repository.RoleRepository;
 import com.CapstoneProject.capstone.repository.UserProfileRepository;
 import com.CapstoneProject.capstone.repository.UserRepository;
+import com.CapstoneProject.capstone.repository.UserRoleRepository;
 import com.CapstoneProject.capstone.service.IUserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -37,12 +41,14 @@ public class UserService implements IUserService {
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
 
     @Override
     @Transactional
     public RegisterResponse registerUser(RegisterRequest request) {
         String genderStr = request.getUserInfo().getGender();
-
+        Role role = roleRepository.findByName(RoleEnum.USER);
         GenderEnum gender;
         try {
             gender = GenderEnum.valueOf(genderStr.toUpperCase());
@@ -68,6 +74,11 @@ public class UserService implements IUserService {
         userProfileRepository.save(userProfile);
         UserRole userRole = new UserRole();
         userRole.setUser(user);
+        userRole.setRole(role);
+        userRole.setActive(true);
+        userRole.setCreatedAt(LocalDateTime.now());
+        userRole.setUpdatedAt(LocalDateTime.now());
+        userRoleRepository.save(userRole);
         RegisterResponse registerResponse = new RegisterResponse();
         registerResponse.setUser(userMapper.toResponse(user));
         registerResponse.setUserInfo(userMapper.toResponse(userProfile));

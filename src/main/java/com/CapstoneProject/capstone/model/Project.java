@@ -1,7 +1,9 @@
 package com.CapstoneProject.capstone.model;
 
-import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,4 +25,10 @@ public class Project extends BaseEntity {
     private List<Notification> notifications;
     @OneToMany(mappedBy = "project")
     private List<Topic> topics;
+    @OneToMany(mappedBy = "project")
+    private List<ProjectMember> projectMembers;
+    @ManyToOne()
+    @JoinColumn(name = "profile_id")
+    @JsonIgnore
+    private UserProfile userProfile;
 }

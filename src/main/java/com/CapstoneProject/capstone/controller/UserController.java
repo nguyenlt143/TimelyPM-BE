@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.controller;
 
+import com.CapstoneProject.capstone.constant.UrlConstant;
 import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
@@ -18,17 +19,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping(UrlConstant.USER.USER)
 @RequiredArgsConstructor
 public class UserController {
     private final IUserService userService;
-    @PostMapping("/register")
+    @PostMapping(UrlConstant.USER.REGISTER)
     public ResponseEntity<BaseResponse<RegisterResponse>> register(@RequestBody @Valid RegisterRequest request) {
         RegisterResponse data = userService.registerUser(request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Đăng ký thành công", data));
     }
 
-    @PostMapping("/auth")
+    @PostMapping(UrlConstant.USER.LOGIN)
     public ResponseEntity<BaseResponse<AuthenticateResponse>> authenticate(@RequestBody @Valid AuthenticateRequest request) {
         AuthenticateResponse data = userService.authenticateUser(request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Đăng nhập thành công", data));

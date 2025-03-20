@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.dto.response.project;
 
+import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,4 +17,5 @@ public class GetProjectResponse {
     private String name;
     private String image;
     private String status;
+    private GetProfileResponse profile;
 }
