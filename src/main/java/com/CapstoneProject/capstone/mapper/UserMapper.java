@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.mapper;
 
 import com.CapstoneProject.capstone.dto.request.user.RegisterUserInfoRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterUserRequest;
+import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterUserInfoResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterUserResponse;
 import com.CapstoneProject.capstone.model.User;
@@ -32,5 +33,10 @@ public class UserMapper {
 
     public RegisterUserInfoResponse toResponse(UserProfile userProfile){
         return modelMapper.map(userProfile, RegisterUserInfoResponse.class);
+    }
+
+    public GetUserResponse getUserResponse(User user){
+        GetUserResponse response = modelMapper.map(user, GetUserResponse.class);
+        return response;
     }
 }
