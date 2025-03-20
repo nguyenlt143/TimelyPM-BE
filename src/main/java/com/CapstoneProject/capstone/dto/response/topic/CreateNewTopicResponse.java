@@ -14,7 +14,6 @@ import java.util.UUID;
 @Setter
 public class CreateNewTopicResponse {
     private UUID id;
-    private UUID projectId;
     private String type;
     private String description;
     private String labels;

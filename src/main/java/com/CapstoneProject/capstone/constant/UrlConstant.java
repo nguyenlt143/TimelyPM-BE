@@ -27,4 +27,9 @@ public class UrlConstant {
         public static final String GET_TOPICS = "";
     }
 
+    public static class TASK {
+        public static final String TASK = API + "/task";
+        public static final String CREATE = "/create";
+    }
+
 }

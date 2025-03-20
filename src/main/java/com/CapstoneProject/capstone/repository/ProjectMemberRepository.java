@@ -17,4 +17,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
         LIMIT 1
     """, nativeQuery = true)
     Optional<ProjectMember> findByProjectIdAndUserId(UUID projectId, UUID userId);
+
+    @Query(value = "SELECT * FROM project_member WHERE active = true AND id = :id", nativeQuery = true)
+    Optional<ProjectMember> findProjectMember(@Param("id") UUID id);
 }

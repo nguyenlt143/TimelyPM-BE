@@ -17,6 +17,7 @@ import lombok.Setter;
 public class Notification extends BaseEntity{
     private String message;
     private boolean isRead;
+    @Enumerated(EnumType.STRING)
     private NotificationTypeEnum notificationType;
 
     @ManyToOne
