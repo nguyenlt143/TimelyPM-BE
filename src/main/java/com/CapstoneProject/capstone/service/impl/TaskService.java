@@ -65,17 +65,18 @@ public class TaskService implements ITaskService {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
-        ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+//        ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
 
         Task task = taskMapper.toModel(request);
         task.setTopic(topic);
-        task.setAssignee(isAlreadyMember);
+        task.setAssignee(projectMember);
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         task.setActive(true);
         task.setStatus(StatusEnum.OPEN);
         taskRepository.save(task);
-        User user = userRepository.findById(isAlreadyMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+        User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
         UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
