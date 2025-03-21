@@ -54,9 +54,9 @@ public class ProjectController {
 
     @PostMapping(UrlConstant.PROJECT.INVITE_PROJECT)
     public ResponseEntity<BaseResponse<Boolean>> invite(@PathVariable UUID id,
-                                                        @RequestParam UUID userId,
+                                                        @RequestParam String email,
                                                         @RequestParam String role) {
-        boolean response = projectService.inviteUserToProject(id, userId, role);
+        boolean response = projectService.inviteUserToProject(id, email, role);
         return ResponseEntity.ok(new BaseResponse<>("200", "Thêm thành viên thành công", response));
     }
 

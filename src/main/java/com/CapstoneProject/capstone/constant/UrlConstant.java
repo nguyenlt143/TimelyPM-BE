@@ -32,4 +32,9 @@ public class UrlConstant {
         public static final String CREATE = "/create";
     }
 
+    public static class MEMBER {
+        public static final String MEMBER = API + "/member";
+        public static final String GET_MEMBERS = "";
+    }
+
 }

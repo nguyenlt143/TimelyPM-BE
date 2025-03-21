@@ -117,7 +117,7 @@ public class ProjectService implements IProjectService {
     }
 
     @Override
-    public boolean inviteUserToProject(UUID projectId, UUID id, String role) {
+    public boolean inviteUserToProject(UUID projectId, String email, String role) {
         RoleEnum roleEnum;
         try {
             roleEnum = RoleEnum.valueOf(role.toUpperCase());
@@ -134,9 +134,9 @@ public class ProjectService implements IProjectService {
             throw new ForbiddenException("Bạn không có quyền");
         }
 
-        User userInvite = userRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+        User userInvite = userRepository.findByEmail(email).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
 
-        Optional<ProjectMember> isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, id);
+        Optional<ProjectMember> isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userInvite.getId());
         if (isAlreadyMember.isPresent()){
             throw new RuntimeException("Người dùng đã là thành viên dự án");
         }
