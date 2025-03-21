@@ -83,6 +83,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidProjectException.class)
+    public ResponseEntity<BaseResponse<?>> invalidProjectException(InvalidProjectException ex) {
+        BaseResponse<?> response = new BaseResponse<>();
+        response.setCode("400");
+        response.setMessage(ex.getMessage());
+        response.setData(null);
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseResponse<Void>> handleGeneralException(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

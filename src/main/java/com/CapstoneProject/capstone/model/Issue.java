@@ -27,7 +27,7 @@ public class Issue extends BaseEntity{
     private PriorityEnum priority;
     @Enumerated(EnumType.STRING)
     private StatusEnum status;
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "assignee_to")
     @JsonIgnore
     private ProjectMember assignee;

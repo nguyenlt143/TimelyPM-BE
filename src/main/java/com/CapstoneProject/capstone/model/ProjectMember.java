@@ -4,10 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -29,4 +32,13 @@ public class ProjectMember extends BaseEntity{
     @JoinColumn(name = "role_id")
     @JsonIgnore
     private Role role;
+
+    @OneToMany(mappedBy = "assignee")
+    private List<Task> tasks;
+
+    @OneToMany(mappedBy = "assignee")
+    private List<Issue> issues;
+
+    @OneToMany(mappedBy = "assignee")
+    private List<Question> questions;
 }

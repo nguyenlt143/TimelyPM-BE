@@ -30,6 +30,7 @@ public class UrlConstant {
     public static class TASK {
         public static final String TASK = API + "/task";
         public static final String CREATE = "/create";
+        public static final String GET_TASKS = "";
     }
 
     public static class MEMBER {

@@ -11,6 +11,7 @@ import com.CapstoneProject.capstone.enums.RoleEnum;
 import com.CapstoneProject.capstone.exception.ForbiddenException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
+import com.CapstoneProject.capstone.exception.UserExisted;
 import com.CapstoneProject.capstone.mapper.ProjectMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
@@ -138,7 +139,7 @@ public class ProjectService implements IProjectService {
 
         Optional<ProjectMember> isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userInvite.getId());
         if (isAlreadyMember.isPresent()){
-            throw new RuntimeException("Người dùng đã là thành viên dự án");
+            throw new UserExisted("Người dùng đã là thành viên dự án");
         }
 
         Role roleUser = roleRepository.findByName(roleEnum);

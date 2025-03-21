@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.mapper;
 
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
 import com.CapstoneProject.capstone.dto.response.task.CreateNewTaskResponse;
+import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.model.Task;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -19,5 +20,8 @@ public class TaskMapper {
     }
     public CreateNewTaskResponse toResponse(Task task) {
         return modelMapper.map(task, CreateNewTaskResponse.class);
+    }
+    public GetTaskResponse toGetResponse(Task task) {
+        return modelMapper.map(task, GetTaskResponse.class);
     }
 }
