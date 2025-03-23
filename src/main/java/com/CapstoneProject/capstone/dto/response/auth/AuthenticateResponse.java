@@ -16,5 +16,5 @@ public class AuthenticateResponse {
     private UUID id;
     private String username;
     private String token;
-    private List<String> role;
+    private String role;
 }

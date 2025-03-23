@@ -18,11 +18,11 @@ public class RoleService {
     public void initRoles() {
         if (roleRepository.count() == 0) {
             roleRepository.saveAll(List.of(
-                    new Role(null, RoleEnum.ADMIN, null),
-                    new Role(null, RoleEnum.QA, null),
-                    new Role(null, RoleEnum.DEV, null),
-                    new Role(null, RoleEnum.PM, null),
-                    new Role(null, RoleEnum.USER, null)
+                    new Role(null, RoleEnum.ADMIN),
+                    new Role(null, RoleEnum.QA),
+                    new Role(null, RoleEnum.DEV),
+                    new Role(null, RoleEnum.PM),
+                    new Role(null, RoleEnum.USER)
             ));
         }
     }

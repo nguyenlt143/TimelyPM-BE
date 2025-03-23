@@ -15,11 +15,9 @@ import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.Role;
 import com.CapstoneProject.capstone.model.User;
 import com.CapstoneProject.capstone.model.UserProfile;
-import com.CapstoneProject.capstone.model.UserRole;
 import com.CapstoneProject.capstone.repository.RoleRepository;
 import com.CapstoneProject.capstone.repository.UserProfileRepository;
 import com.CapstoneProject.capstone.repository.UserRepository;
-import com.CapstoneProject.capstone.repository.UserRoleRepository;
 import com.CapstoneProject.capstone.service.IUserService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import jakarta.transaction.Transactional;
@@ -43,8 +41,6 @@ public class UserService implements IUserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
-    private final UserRoleRepository userRoleRepository;
-
     private final UserProfileMapper userProfileMapper;
 
     @Override
@@ -70,18 +66,12 @@ public class UserService implements IUserService {
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         user.setActive(true);
+        user.setRole(role);
         userRepository.save(user);
         UserProfile userProfile = userMapper.toProfile(request.getUserInfo());
         userProfile.setUser(user);
         userProfile.setGender(request.getUserInfo().getGender());
         userProfileRepository.save(userProfile);
-        UserRole userRole = new UserRole();
-        userRole.setUser(user);
-        userRole.setRole(role);
-        userRole.setActive(true);
-        userRole.setCreatedAt(LocalDateTime.now());
-        userRole.setUpdatedAt(LocalDateTime.now());
-        userRoleRepository.save(userRole);
         RegisterResponse registerResponse = new RegisterResponse();
         registerResponse.setUser(userMapper.toResponse(user));
         registerResponse.setUserInfo(userMapper.toResponse(userProfile));
@@ -99,16 +89,13 @@ public class UserService implements IUserService {
                 )
         );
         User user = (User) authentication.getPrincipal();
-//        List<String> roles = user.getUserRoles().stream()
-//                .map(userRole -> userRole.getRole().getName())
-//                .collect(Collectors.toList());
         var jwtToken = jwtService.generateToken(user);
 
         AuthenticateResponse response = new AuthenticateResponse();
         response.setToken(jwtToken);
         response.setId(user.getId());
         response.setUsername(user.getUsername());
-//        response.setRole(roles);
+        response.setRole(user.getRole().getName().name());
         return response;
     }
 

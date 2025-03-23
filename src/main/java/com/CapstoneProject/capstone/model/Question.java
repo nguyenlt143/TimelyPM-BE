@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Date;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -36,4 +37,6 @@ public class Question extends BaseEntity{
     @JoinColumn(name = "topic_id")
     @JsonIgnore
     private Topic topic;
+    @OneToMany(mappedBy = "question")
+    private List<File> files;
 }

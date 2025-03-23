@@ -18,7 +18,17 @@ public class File extends BaseEntity{
     private String name;
     private String url;
     @ManyToOne
-    @JoinColumn(name = "topic_id")
+    @JoinColumn(name = "task_id")
     @JsonIgnore
-    private Topic topic;
+    private Task task;
+
+    @ManyToOne
+    @JoinColumn(name = "issue_id")
+    @JsonIgnore
+    private Issue issue;
+
+    @ManyToOne
+    @JoinColumn(name = "question_id")
+    @JsonIgnore
+    private Question question;
 }

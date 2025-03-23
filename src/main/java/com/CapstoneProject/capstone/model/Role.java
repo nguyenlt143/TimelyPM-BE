@@ -20,6 +20,4 @@ public class Role{
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "ENUM('ADMIN', 'QA', 'DEV', 'PM', 'USER')")
     private RoleEnum name;
-    @OneToMany(mappedBy = "role")
-    private List<UserRole> userRoles;
 }

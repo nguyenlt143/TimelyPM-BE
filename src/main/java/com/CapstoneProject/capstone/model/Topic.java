@@ -34,8 +34,6 @@ public class Topic extends BaseEntity{
     @OneToMany(mappedBy = "topic")
     private List<TopicHistory> topicHistories;
     @OneToMany(mappedBy = "topic")
-    private List<File> files;
-    @OneToMany(mappedBy = "topic")
     private List<Task> tasks;
     @OneToMany(mappedBy = "topic")
     private List<Issue> issues;

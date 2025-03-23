@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Date;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -35,4 +36,10 @@ public class Issue extends BaseEntity{
     @JoinColumn(name = "topic_id")
     @JsonIgnore
     private Topic topic;
+    @OneToMany(mappedBy = "issue")
+    private List<File> files;
+    @ManyToOne
+    @JoinColumn(name = "task_id")
+    @JsonIgnore
+    private Task task;
 }
