@@ -1,9 +1,6 @@
 package com.CapstoneProject.capstone.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,7 +24,7 @@ public class User extends BaseEntity implements UserDetails {
     private String email;
     @OneToMany(mappedBy = "user")
     private List<Notification> notifications;
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
     @OneToMany(mappedBy = "user")
