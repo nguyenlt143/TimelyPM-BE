@@ -23,12 +23,12 @@ public class TaskController {
     @PostMapping(UrlConstant.TASK.CREATE)
     public ResponseEntity<BaseResponse<CreateNewTaskResponse>> create(@RequestParam UUID projectId, @RequestParam UUID topicId, @Valid @RequestBody CreateNewTaskRequest request) {
         CreateNewTaskResponse response = taskService.createNewTask(projectId, topicId, request);
-        return ResponseEntity.ok(new BaseResponse<>("200", "Tạo topic thành công", response));
+        return ResponseEntity.ok(new BaseResponse<>("200", "Tạo task thành công", response));
     }
 
     @GetMapping(UrlConstant.TASK.GET_TASKS)
     public ResponseEntity<BaseResponse<List<GetTaskResponse>>> GetAllTask(@RequestParam UUID projectId, @RequestParam UUID topicId) {
         List<GetTaskResponse> response = taskService.getTasks(projectId, topicId);
-        return ResponseEntity.ok(new BaseResponse<>("200", "Tạo topic thành công", response));
+        return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách task thành công", response));
     }
 }

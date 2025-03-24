@@ -33,6 +33,18 @@ public class UrlConstant {
         public static final String GET_TASKS = "";
     }
 
+    public static class ISSUE {
+        public static final String ISSUE = API + "/issue";
+        public static final String CREATE = "/create";
+        public static final String GET_ISSUES = "";
+    }
+
+    public static class QUESTION {
+        public static final String QUESTION = API + "/question";
+        public static final String CREATE = "/create";
+        public static final String GET_QUESTIONS = "";
+    }
+
     public static class MEMBER {
         public static final String MEMBER = API + "/member";
         public static final String GET_MEMBERS = "";
