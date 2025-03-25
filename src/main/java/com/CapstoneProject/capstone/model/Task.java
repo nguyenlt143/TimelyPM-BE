@@ -33,6 +33,14 @@ public class Task extends BaseEntity{
     @JsonIgnore
     private ProjectMember assignee;
     @ManyToOne
+    @JoinColumn(name = "reporter_id")
+    @JsonIgnore
+    private ProjectMember reporter;
+    @ManyToOne
+    @JoinColumn(name = "created_by_id")
+    @JsonIgnore
+    private ProjectMember createdBy;
+    @ManyToOne
     @JoinColumn(name = "topic_id")
     @JsonIgnore
     private Topic topic;

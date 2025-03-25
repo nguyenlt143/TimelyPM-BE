@@ -75,6 +75,7 @@ public class IssueService implements IIssueService {
         issue.setActive(true);
         issue.setCreatedAt(LocalDateTime.now());
         issue.setUpdatedAt(LocalDateTime.now());
+        issue.setTopic(topic);
         issueRepository.save(issue);
         User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);

@@ -99,4 +99,15 @@ public class GlobalExceptionHandler {
                 .body(new BaseResponse<>("500", "Lỗi máy chủ", null));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<BaseResponse<?>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        BaseResponse<?> response = new BaseResponse<>();
+        response.setCode("400");
+        response.setMessage(ex.getMessage());
+        response.setData(null);
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+
 }

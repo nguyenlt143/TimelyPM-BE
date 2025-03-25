@@ -74,6 +74,7 @@ public class QuestionService implements IQuestionService {
         question.setActive(true);
         question.setCreatedAt(LocalDateTime.now());
         question.setUpdatedAt(LocalDateTime.now());
+        question.setTopic(topic);
         questionRepository.save(question);
         User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
