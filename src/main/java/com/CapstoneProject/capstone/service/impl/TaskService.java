@@ -64,13 +64,14 @@ public class TaskService implements ITaskService {
         if(!topic.getProject().getId().equals(project.getId())){
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
-
+        ProjectMember pmMember = projectMemberRepository.findByProjectIdAndUserId(projectId, pmUser.getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
         ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
 //        ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
 
         Task task = taskMapper.toModel(request);
         task.setTopic(topic);
         task.setAssignee(projectMember);
+        task.setCreatedBy(pmMember);
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         task.setActive(true);
@@ -118,4 +119,116 @@ public class TaskService implements ITaskService {
         }).collect(Collectors.toList());
         return responses;
     }
+
+    @Override
+    public GetTaskResponse getTask(UUID id, UUID projectId, UUID topicId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
+        boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
+
+        boolean isAssignee = task.getAssignee().getUser().getId().equals(userId);
+
+        if (!isPM && !isAssignee) {
+            throw new ForbiddenException("Bạn không có quyền xem task này");
+        }
+
+        User user = task.getAssignee().getUser();
+        GetUserResponse userResponse = userMapper.getUserResponse(user);
+
+        UserProfile userProfile = profileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
+        GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
+        userResponse.setProfile(profileResponse);
+
+        GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
+        taskResponse.setUser(userResponse);
+
+        return taskResponse;
+    }
+
+    @Override
+    public Boolean deleteTask(UUID id, UUID projectId, UUID topicId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
+        if (pmUserOpt.isEmpty() || !pmUserOpt.get().getId().equals(userId)) {
+            throw new ForbiddenException("Bạn không có quyền xóa task này");
+        }
+        task.setActive(false);
+        task.setUpdatedAt(LocalDateTime.now());
+        taskRepository.save(task);
+        return true;
+    }
+
+    @Override
+    public GetTaskResponse updateTask(UUID id, UUID projectId, UUID topicId, String status) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
+
+        boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
+
+        boolean isAssignee = task.getAssignee().getUser().getId().equals(userId);
+
+
+        if (!isPM && !isAssignee) {
+            throw new ForbiddenException("Bạn không có quyền cập nhật task này");
+        }
+
+        StatusEnum newStatus;
+        try {
+            newStatus = StatusEnum.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new InvalidEnumException("Trạng thái không hợp lệ! Chỉ chấp nhận OPEN, INPROGRESS, DONE.");
+        }
+
+        task.setStatus(newStatus);
+        task.setUpdatedAt(LocalDateTime.now());
+        taskRepository.save(task);
+
+        GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
+        return taskResponse;
+    }
+
 }

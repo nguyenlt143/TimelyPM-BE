@@ -11,6 +11,7 @@ import com.CapstoneProject.capstone.service.IProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,6 +38,12 @@ public class ProjectController {
     @GetMapping(UrlConstant.PROJECT.GET_PROJECTS)
     public ResponseEntity<BaseResponse<List<GetProjectResponse>>> getProjects() {
         List<GetProjectResponse> response = projectService.getAllProjects();
+        return ResponseEntity.ok(new BaseResponse<>("200", "Danh sách dự án", response));
+    }
+
+    @GetMapping(UrlConstant.PROJECT.GET_PROJECTS_BY_USER)
+    public ResponseEntity<BaseResponse<List<GetProjectResponse>>> getProjectsByUser() {
+        List<GetProjectResponse> response = projectService.getProjectByUser();
         return ResponseEntity.ok(new BaseResponse<>("200", "Danh sách dự án", response));
     }
 

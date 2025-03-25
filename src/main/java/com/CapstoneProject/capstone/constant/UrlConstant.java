@@ -15,6 +15,7 @@ public class UrlConstant {
         public static final String CREATE = "/create";
         public static final String GET_PROJECT = "/{id}";
         public static final String GET_PROJECTS = "";
+        public static final String GET_PROJECTS_BY_USER = "/user";
         public static final String DELETE_PROJECT = "/{id}";
         public static final String UPDATE_PROJECT = "/{id}";
         public static final String INVITE_PROJECT = "/{id}/invite";
@@ -34,6 +35,9 @@ public class UrlConstant {
         public static final String TASK = API + "/task";
         public static final String CREATE = "/create";
         public static final String GET_TASKS = "";
+        public static final String GET_TASK = "/{id}";
+        public static final String UPDATE_TASKS = "/{id}";
+        public static final String DELETE_TASKS = "/{id}";
     }
 
     public static class ISSUE {

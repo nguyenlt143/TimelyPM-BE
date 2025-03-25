@@ -18,4 +18,5 @@ public interface IProjectService {
     UpdateProjectResponse updateProjectById(UUID id, UpdateProjectRequest request);
     boolean inviteUserToProject(UUID projectId, String email, String role);
     boolean deleteUserFromProject(UUID projectId, UUID id);
+    List<GetProjectResponse> getProjectByUser();
 }

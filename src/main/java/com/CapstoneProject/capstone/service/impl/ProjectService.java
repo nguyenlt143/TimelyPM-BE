@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.awt.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -172,6 +173,15 @@ public class ProjectService implements IProjectService {
 
         projectMemberRepository.delete(isAlreadyMember);
         return true;
+    }
+
+    @Override
+    public List<GetProjectResponse> getProjectByUser() {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        List<Project> projects = projectRepository.findByUser(userId);
+        List<GetProjectResponse> projectResponses = projects.stream().map(GetProjectResponse::new).collect(Collectors.toList());
+        return projectResponses;
     }
 
 

@@ -31,4 +31,22 @@ public class TaskController {
         List<GetTaskResponse> response = taskService.getTasks(projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách task thành công", response));
     }
+
+    @GetMapping(UrlConstant.TASK.GET_TASK)
+    public ResponseEntity<BaseResponse<GetTaskResponse>> GetTask(@PathVariable UUID id,@RequestParam UUID projectId, @RequestParam UUID topicId) {
+        GetTaskResponse response = taskService.getTask(id, projectId, topicId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Lấy task thành công", response));
+    }
+
+    @GetMapping(UrlConstant.TASK.UPDATE_TASKS)
+    public ResponseEntity<BaseResponse<GetTaskResponse>> UpdateTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam String status) {
+        GetTaskResponse response = taskService.updateTask(id, projectId, topicId, status);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Update task thành công", response));
+    }
+
+    @GetMapping(UrlConstant.TASK.DELETE_TASKS)
+    public ResponseEntity<BaseResponse<Boolean>> deleteTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId) {
+        boolean response = taskService.deleteTask(id, projectId, topicId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Xóa task thành công", response));
+    }
 }
