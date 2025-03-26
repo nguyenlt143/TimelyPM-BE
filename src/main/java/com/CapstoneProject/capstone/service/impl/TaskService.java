@@ -41,6 +41,7 @@ public class TaskService implements ITaskService {
     private final UserProfileMapper userProfileMapper;
     private final UserProfileRepository profileRepository;
     private final ProjectRepository projectRepository;
+    private final UserProfileRepository userProfileRepository;
 
     @Override
     public CreateNewTaskResponse createNewTask(UUID projectId, UUID topicId, CreateNewTaskRequest request) {
@@ -101,7 +102,7 @@ public class TaskService implements ITaskService {
 
         List<Task> tasks = taskRepository.findByTopicId(topicId);
         List<GetTaskResponse> responses = tasks.stream().map(task -> {
-            User user = userRepository.findById(task.getAssignee().getUser().getId())
+            User user = userRepository.findById(task.getCreatedBy().getUser().getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
 
             GetUserResponse userResponse = userMapper.getUserResponse(user);
@@ -109,12 +110,21 @@ public class TaskService implements ITaskService {
             UserProfile userProfile = profileRepository.findByUserId(user.getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
 
+            User assignee = userRepository.findById(task.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse userAssigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile userProfileAssignee = userProfileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
             GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
+            GetProfileResponse userProfileAssigneeResponse = userProfileMapper.toProfile(userProfileAssignee);
+
+            userAssigneeResponse.setProfile(userProfileAssigneeResponse);
             userResponse.setProfile(profileResponse);
 
             GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
             taskResponse.setUser(userResponse);
-
+            taskResponse.setAssignee(userAssigneeResponse);
             return taskResponse;
         }).collect(Collectors.toList());
         return responses;
@@ -140,26 +150,40 @@ public class TaskService implements ITaskService {
         Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
         boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
 
-        boolean isAssignee = task.getAssignee().getUser().getId().equals(userId);
+        boolean isAssignee = (task.getAssignee() != null && task.getAssignee().getUser() != null)
+                && task.getAssignee().getUser().getId().equals(userId);
 
         if (!isPM && !isAssignee) {
             throw new ForbiddenException("Bạn không có quyền xem task này");
         }
 
-        User user = task.getAssignee().getUser();
-        GetUserResponse userResponse = userMapper.getUserResponse(user);
+        User creator = userRepository.findById(task.getCreatedBy().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo task"));
+        GetUserResponse creatorResponse = userMapper.getUserResponse(creator);
 
-        UserProfile userProfile = profileRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+        UserProfile creatorProfile = profileRepository.findByUserId(creator.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo task"));
+        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
 
-        GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
-        userResponse.setProfile(profileResponse);
+        GetUserResponse assigneeResponse = null;
+        if (task.getAssignee() != null && task.getAssignee().getUser() != null) {
+            User assignee = userRepository.findById(task.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao task"));
+
+            assigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao task"));
+
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
 
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
-        taskResponse.setUser(userResponse);
+        taskResponse.setUser(creatorResponse);
+        taskResponse.setAssignee(assigneeResponse);
 
         return taskResponse;
     }
+
 
     @Override
     public Boolean deleteTask(UUID id, UUID projectId, UUID topicId) {
@@ -223,11 +247,33 @@ public class TaskService implements ITaskService {
             throw new InvalidEnumException("Trạng thái không hợp lệ! Chỉ chấp nhận OPEN, INPROGRESS, DONE.");
         }
 
+        User creator = userRepository.findById(task.getCreatedBy().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo task"));
+        GetUserResponse creatorResponse = userMapper.getUserResponse(creator);
+
+        UserProfile creatorProfile = profileRepository.findByUserId(creator.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo task"));
+        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
+
+        GetUserResponse assigneeResponse = null;
+        if (task.getAssignee() != null && task.getAssignee().getUser() != null) {
+            User assignee = userRepository.findById(task.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao task"));
+
+            assigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao task"));
+
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
+
         task.setStatus(newStatus);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
+        taskResponse.setUser(creatorResponse);
+        taskResponse.setAssignee(assigneeResponse);
         return taskResponse;
     }
 

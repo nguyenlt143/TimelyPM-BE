@@ -24,4 +24,5 @@ public class GetTaskResponse {
     private String priority;
     private String status;
     private GetUserResponse user;
+    private GetUserResponse assignee;
 }
