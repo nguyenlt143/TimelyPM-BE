@@ -109,5 +109,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidRoleException.class)
+    public ResponseEntity<BaseResponse<?>> invalidRoleException(InvalidRoleException ex) {
+        BaseResponse<?> response = new BaseResponse<>();
+        response.setCode("400");
+        response.setMessage(ex.getMessage());
+        response.setData(null);
 
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
 }

@@ -9,10 +9,7 @@ import com.CapstoneProject.capstone.enums.GenderEnum;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
 import com.CapstoneProject.capstone.enums.RoleEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
-import com.CapstoneProject.capstone.exception.ForbiddenException;
-import com.CapstoneProject.capstone.exception.InvalidEnumException;
-import com.CapstoneProject.capstone.exception.InvalidProjectException;
-import com.CapstoneProject.capstone.exception.NotFoundException;
+import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.TaskMapper;
 import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
@@ -42,6 +39,7 @@ public class TaskService implements ITaskService {
     private final UserProfileRepository profileRepository;
     private final ProjectRepository projectRepository;
     private final UserProfileRepository userProfileRepository;
+    private final RoleRepository roleRepository;
 
     @Override
     public CreateNewTaskResponse createNewTask(UUID projectId, UUID topicId, CreateNewTaskRequest request) {
@@ -68,10 +66,19 @@ public class TaskService implements ITaskService {
         ProjectMember pmMember = projectMemberRepository.findByProjectIdAndUserId(projectId, pmUser.getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
         ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
 //        ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
-
+        Role roleAssign = roleRepository.findById(projectMember.getRole().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò"));
+        if(!roleAssign.getName().equals(RoleEnum.DEV)){
+            throw new InvalidRoleException("Không phải role thực hiện task, thực hiện task là role DEV");
+        }
+        ProjectMember reporter = projectMemberRepository.findById(request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        Role roleReporter = roleRepository.findById(reporter.getRole().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò"));
+        if(!roleReporter.getName().equals(RoleEnum.QA)){
+            throw new InvalidRoleException("Không phải role thực hiện report, reporter là role QA");
+        }
         Task task = taskMapper.toModel(request);
         task.setTopic(topic);
         task.setAssignee(projectMember);
+        task.setReporter(reporter);
         task.setCreatedBy(pmMember);
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
@@ -116,15 +123,24 @@ public class TaskService implements ITaskService {
             UserProfile userProfileAssignee = userProfileRepository.findByUserId(assignee.getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
 
+            User report = userRepository.findById(task.getReporter().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse userReporterResponse = userMapper.getUserResponse(report);
+            UserProfile userProfileReporter = userProfileRepository.findByUserId(report.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
             GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
             GetProfileResponse userProfileAssigneeResponse = userProfileMapper.toProfile(userProfileAssignee);
+            GetProfileResponse userProfileReporterResponse = userProfileMapper.toProfile(userProfileReporter);
 
             userAssigneeResponse.setProfile(userProfileAssigneeResponse);
             userResponse.setProfile(profileResponse);
+            userReporterResponse.setProfile(userProfileReporterResponse);
 
             GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
             taskResponse.setUser(userResponse);
             taskResponse.setAssignee(userAssigneeResponse);
+            taskResponse.setReporter(userReporterResponse);
             return taskResponse;
         }).collect(Collectors.toList());
         return responses;
@@ -153,7 +169,10 @@ public class TaskService implements ITaskService {
         boolean isAssignee = (task.getAssignee() != null && task.getAssignee().getUser() != null)
                 && task.getAssignee().getUser().getId().equals(userId);
 
-        if (!isPM && !isAssignee) {
+        boolean isReporter = (task.getReporter() != null && task.getReporter().getUser() != null)
+                && task.getReporter().getUser().getId().equals(userId);
+
+        if (!isPM && !isAssignee && !isReporter) {
             throw new ForbiddenException("Bạn không có quyền xem task này");
         }
 
@@ -177,9 +196,22 @@ public class TaskService implements ITaskService {
             assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
         }
 
+        GetUserResponse reporterResponse = null;
+        if (task.getReporter() != null && task.getReporter().getUser() != null) {
+            User assignee = userRepository.findById(task.getReporter().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được làm báo cáo"));
+
+            reporterResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được làm báo cáo"));
+
+            reporterResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
+
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
         taskResponse.setUser(creatorResponse);
         taskResponse.setAssignee(assigneeResponse);
+        taskResponse.setReporter(reporterResponse);
 
         return taskResponse;
     }

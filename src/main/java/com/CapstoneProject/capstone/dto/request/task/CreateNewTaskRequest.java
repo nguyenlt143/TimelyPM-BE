@@ -14,6 +14,7 @@ import java.util.UUID;
 @Setter
 public class CreateNewTaskRequest {
     private UUID assigneeTo;
+    private UUID reporter;
     private String label;
     private String summer;
     private String description;
