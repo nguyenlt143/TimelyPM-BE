@@ -38,6 +38,7 @@ public class UrlConstant {
         public static final String GET_TASK = "/{id}";
         public static final String UPDATE_TASKS = "/{id}";
         public static final String DELETE_TASKS = "/{id}";
+        public static final String CREATE_ISSUE_BY_TASK = "/{id}/issue";
     }
 
     public static class ISSUE {

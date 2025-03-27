@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.model;
 
 import com.CapstoneProject.capstone.enums.PriorityEnum;
+import com.CapstoneProject.capstone.enums.SeverityEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -25,6 +26,8 @@ public class Issue extends BaseEntity{
     private Date startDate;
     private Date dueDate;
     @Enumerated(EnumType.STRING)
+    private SeverityEnum severity;
+    @Enumerated(EnumType.STRING)
     private PriorityEnum priority;
     @Enumerated(EnumType.STRING)
     private StatusEnum status;
@@ -32,6 +35,14 @@ public class Issue extends BaseEntity{
     @JoinColumn(name = "assignee_to")
     @JsonIgnore
     private ProjectMember assignee;
+    @ManyToOne
+    @JoinColumn(name = "reporter_id")
+    @JsonIgnore
+    private ProjectMember reporter;
+    @ManyToOne
+    @JoinColumn(name = "created_by_id")
+    @JsonIgnore
+    private ProjectMember createdBy;
     @ManyToOne
     @JoinColumn(name = "topic_id")
     @JsonIgnore

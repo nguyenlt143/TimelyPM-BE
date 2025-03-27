@@ -1,8 +1,10 @@
 package com.CapstoneProject.capstone.controller;
 
 import com.CapstoneProject.capstone.constant.UrlConstant;
+import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueByTaskRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
+import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.CreateNewTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.service.ITaskService;
@@ -24,6 +26,12 @@ public class TaskController {
     public ResponseEntity<BaseResponse<CreateNewTaskResponse>> create(@RequestParam UUID projectId, @RequestParam UUID topicId, @Valid @RequestBody CreateNewTaskRequest request) {
         CreateNewTaskResponse response = taskService.createNewTask(projectId, topicId, request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Tạo task thành công", response));
+    }
+
+    @PostMapping(UrlConstant.TASK.CREATE_ISSUE_BY_TASK)
+    public ResponseEntity<BaseResponse<CreateNewIssueByTaskResponse>> create(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @Valid @RequestBody CreateNewIssueByTaskRequest request) {
+        CreateNewIssueByTaskResponse response = taskService.createNewIssueByTask(id, projectId, topicId, request);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Tạo issue thành công", response));
     }
 
     @GetMapping(UrlConstant.TASK.GET_TASKS)

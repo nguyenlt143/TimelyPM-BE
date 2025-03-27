@@ -69,7 +69,7 @@ public class QuestionService implements IQuestionService {
         question.setAssignee(projectMember);
         question.setStartDate(request.getStartDate());
         question.setDueDate(request.getDueDate());
-        question.setStatus(StatusEnum.OPEN);
+        question.setStatus(StatusEnum.PENDING);
         question.setPriority(priority);
         question.setActive(true);
         question.setCreatedAt(LocalDateTime.now());

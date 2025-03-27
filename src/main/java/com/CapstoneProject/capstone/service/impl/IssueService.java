@@ -70,7 +70,7 @@ public class IssueService implements IIssueService {
         issue.setAssignee(projectMember);
         issue.setStartDate(request.getStartDate());
         issue.setDueDate(request.getDueDate());
-        issue.setStatus(StatusEnum.OPEN);
+        issue.setStatus(StatusEnum.PENDING);
         issue.setPriority(priority);
         issue.setActive(true);
         issue.setCreatedAt(LocalDateTime.now());

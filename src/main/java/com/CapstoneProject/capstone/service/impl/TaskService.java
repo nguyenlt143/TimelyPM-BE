@@ -1,14 +1,13 @@
 package com.CapstoneProject.capstone.service.impl;
 
+import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueByTaskRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
+import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.task.CreateNewTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
-import com.CapstoneProject.capstone.enums.GenderEnum;
-import com.CapstoneProject.capstone.enums.PriorityEnum;
-import com.CapstoneProject.capstone.enums.RoleEnum;
-import com.CapstoneProject.capstone.enums.StatusEnum;
+import com.CapstoneProject.capstone.enums.*;
 import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.TaskMapper;
 import com.CapstoneProject.capstone.mapper.UserMapper;
@@ -18,8 +17,10 @@ import com.CapstoneProject.capstone.repository.*;
 import com.CapstoneProject.capstone.service.ITaskService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.plugins.bmp.BMPImageWriteParam;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +41,7 @@ public class TaskService implements ITaskService {
     private final ProjectRepository projectRepository;
     private final UserProfileRepository userProfileRepository;
     private final RoleRepository roleRepository;
+    private final IssueRepository issueRepository;
 
     @Override
     public CreateNewTaskResponse createNewTask(UUID projectId, UUID topicId, CreateNewTaskRequest request) {
@@ -83,7 +85,7 @@ public class TaskService implements ITaskService {
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         task.setActive(true);
-        task.setStatus(StatusEnum.OPEN);
+        task.setStatus(StatusEnum.PENDING);
         taskRepository.save(task);
         User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
@@ -163,8 +165,9 @@ public class TaskService implements ITaskService {
 
         UUID userId = AuthenUtil.getCurrentUserId();
 
-        Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
-        boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
+        boolean isPM = (task.getCreatedBy() != null && task.getCreatedBy().getUser() != null)
+                && task.getCreatedBy().getUser().getId().equals(userId);
 
         boolean isAssignee = (task.getAssignee() != null && task.getAssignee().getUser() != null)
                 && task.getAssignee().getUser().getId().equals(userId);
@@ -307,6 +310,81 @@ public class TaskService implements ITaskService {
         taskResponse.setUser(creatorResponse);
         taskResponse.setAssignee(assigneeResponse);
         return taskResponse;
+    }
+
+    @Override
+    public CreateNewIssueByTaskResponse createNewIssueByTask(UUID id, UUID projectId, UUID topicId, CreateNewIssueByTaskRequest request) {
+        String priorityStr = request.getPriority();
+        PriorityEnum priority;
+        try {
+            priority = PriorityEnum.valueOf(priorityStr.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new InvalidEnumException("Priority không hợp lệ! Chỉ chấp nhận LOW, MEDIUM, HIGH.");
+        }
+
+        String severityStr = request.getSeverity();
+        SeverityEnum severity;
+        try {
+            severity = SeverityEnum.valueOf(severityStr.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new InvalidEnumException("Severity không hợp lệ! Chỉ chấp nhận MINOR, MODERATE, SIGNIFICANT, SEVERE, CATASTROPHIC.");
+        }
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+        if (!task.getTopic().getId().equals(topic.getId())) {
+            throw new InvalidProjectException("Task không thuộc module đã chỉ định");
+        }
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
+
+        boolean isReporter = (task.getReporter() != null && task.getReporter().getUser() != null)
+                && task.getReporter().getUser().getId().equals(userId);
+
+        if (!isReporter) {
+            throw new ForbiddenException("Bạn không có quyền tạo issue trong task đã chỉ định");
+        }
+
+        Issue issue = new Issue();
+        issue.setLabel(request.getLabel());
+        issue.setSummer(request.getSummer());
+        issue.setDescription(request.getDescription());
+        issue.setAttachment(request.getAttachment());
+        issue.setStartDate(request.getStartDate());
+        issue.setDueDate(request.getDueDate());
+        issue.setPriority(priority);
+        issue.setSeverity(severity);
+        issue.setActive(true);
+        issue.setCreatedAt(LocalDateTime.now());
+        issue.setUpdatedAt(LocalDateTime.now());
+        issue.setAssignee(task.getAssignee());
+        issue.setReporter(task.getReporter());
+        issue.setCreatedBy(task.getReporter());
+        issueRepository.save(issue);
+
+        CreateNewIssueByTaskResponse response = new CreateNewIssueByTaskResponse();
+        response.setId(issue.getId());
+        response.setLabel(issue.getLabel());
+        response.setSummer(issue.getSummer());
+        response.setDescription(issue.getDescription());
+        response.setAttachment(issue.getAttachment());
+        response.setStartDate(issue.getStartDate());
+        response.setDueDate(issue.getDueDate());
+        response.setPriority(issue.getPriority().name());
+        response.setSeverity(issue.getSeverity().name());
+        return response;
     }
 
 }

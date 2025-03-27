@@ -1,7 +1,8 @@
 package com.CapstoneProject.capstone.enums;
 
 public enum StatusEnum {
-    OPEN,
+    PENDING,
+    TODO,
     INPROGRESS,
     DONE
 }
