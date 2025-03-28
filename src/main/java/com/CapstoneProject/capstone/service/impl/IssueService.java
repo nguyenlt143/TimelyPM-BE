@@ -6,6 +6,7 @@ import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
+import com.CapstoneProject.capstone.enums.SeverityEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.CapstoneProject.capstone.exception.ForbiddenException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
@@ -37,6 +38,7 @@ public class IssueService implements IIssueService {
     private final UserProfileMapper userProfileMapper;
     private final UserProfileRepository profileRepository;
     private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
 
     @Override
     public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request) {
@@ -46,6 +48,14 @@ public class IssueService implements IIssueService {
             priority = PriorityEnum.valueOf(priorityStr.toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new InvalidEnumException("Priority không hợp lệ! Chỉ chấp nhận LOW, MEDIUM, HIGH.");
+        }
+
+        String severityStr = request.getSeverity();
+        SeverityEnum severity;
+        try {
+            severity = SeverityEnum.valueOf(severityStr.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new InvalidEnumException("Severity không hợp lệ! Chỉ chấp nhận MINOR, MODERATE, SIGNIFICANT, SEVERE, CATASTROPHIC.");
         }
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
@@ -72,6 +82,7 @@ public class IssueService implements IIssueService {
         issue.setDueDate(request.getDueDate());
         issue.setStatus(StatusEnum.PENDING);
         issue.setPriority(priority);
+        issue.setSeverity(severity);
         issue.setActive(true);
         issue.setCreatedAt(LocalDateTime.now());
         issue.setUpdatedAt(LocalDateTime.now());
@@ -91,6 +102,7 @@ public class IssueService implements IIssueService {
         response.setStartDate(issue.getStartDate());
         response.setDueDate(issue.getDueDate());
         response.setPriority(issue.getPriority().toString());
+        response.setSeverity(issue.getSeverity().toString());
         response.setStatus(issue.getStatus().toString());
         response.setUser(userResponse);
         return response;
@@ -136,5 +148,56 @@ public class IssueService implements IIssueService {
             responses.add(response);
         }
         return responses;
+    }
+
+    @Override
+    public GetIssueResponse getIssueByTask(UUID id, UUID projectId, UUID topicId, UUID taskId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new NotFoundException("Bạn không phải thành viên của project này"));
+
+        boolean isPM = userRepository.findUserWithRolePMByProjectId(projectId)
+                .map(pmUser -> pmUser.getId().equals(userId))
+                .orElse(false);
+
+        Issue issue = issueRepository.findByIdAndTaskId(id, taskId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy issue với id này trong task"));
+
+        boolean isAssignee = (issue.getAssignee() != null && issue.getAssignee().getUser() != null)
+                && issue.getAssignee().getUser().getId().equals(userId);
+
+        boolean isReporter = (issue.getReporter() != null && issue.getReporter().getUser() != null)
+                && issue.getReporter().getUser().getId().equals(userId);
+
+        if (!isPM && !isAssignee && !isReporter) {
+            throw new ForbiddenException("Bạn không có quyền xem issue này");
+        }
+
+        GetIssueResponse response = new GetIssueResponse();
+        response.setId(issue.getId());
+        response.setLabel(issue.getLabel());
+        response.setSummer(issue.getSummer());
+        response.setDescription(issue.getDescription());
+        response.setAttachment(issue.getAttachment());
+        response.setStartDate(issue.getStartDate());
+        response.setDueDate(issue.getDueDate());
+        response.setPriority(issue.getPriority().toString());
+        response.setStatus(issue.getStatus().toString());
+        response.setSeverity(issue.getSeverity().name());
+        return response;
     }
 }

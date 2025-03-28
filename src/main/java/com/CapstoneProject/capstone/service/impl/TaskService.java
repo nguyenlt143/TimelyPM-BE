@@ -366,6 +366,7 @@ public class TaskService implements ITaskService {
         issue.setDueDate(request.getDueDate());
         issue.setPriority(priority);
         issue.setSeverity(severity);
+        issue.setTask(task);
         issue.setActive(true);
         issue.setCreatedAt(LocalDateTime.now());
         issue.setUpdatedAt(LocalDateTime.now());

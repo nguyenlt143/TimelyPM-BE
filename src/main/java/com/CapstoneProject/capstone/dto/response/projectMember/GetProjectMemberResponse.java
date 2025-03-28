@@ -15,4 +15,5 @@ public class GetProjectMemberResponse {
     private UUID id;
     private String avatarUrl;
     private String fullName;
+    private String role;
 }

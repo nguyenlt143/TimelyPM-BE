@@ -23,5 +23,6 @@ public class GetIssueResponse {
     private Date dueDate;
     private String priority;
     private String status;
+    private String severity;
     private GetUserResponse user;
 }

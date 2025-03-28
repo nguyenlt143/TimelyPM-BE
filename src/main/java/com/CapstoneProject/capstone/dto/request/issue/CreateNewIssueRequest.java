@@ -21,4 +21,5 @@ public class CreateNewIssueRequest {
     private Date startDate;
     private Date dueDate;
     private String priority;
+    private String severity;
 }
