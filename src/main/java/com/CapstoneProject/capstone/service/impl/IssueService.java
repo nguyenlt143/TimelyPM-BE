@@ -12,7 +12,6 @@ import com.CapstoneProject.capstone.exception.ForbiddenException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.InvalidProjectException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
-import com.CapstoneProject.capstone.mapper.TaskMapper;
 import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
@@ -187,6 +186,38 @@ public class IssueService implements IIssueService {
             throw new ForbiddenException("Bạn không có quyền xem issue này");
         }
 
+        User creator = userRepository.findById(issue.getCreatedBy().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo issue"));
+        GetUserResponse creatorResponse = userMapper.getUserResponse(creator);
+
+        UserProfile creatorProfile = profileRepository.findByUserId(creator.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo issue"));
+        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
+
+        GetUserResponse assigneeResponse = null;
+        if (issue.getAssignee() != null && issue.getAssignee().getUser() != null) {
+            User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao issue"));
+
+            assigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao issue"));
+
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
+
+        GetUserResponse reporterResponse = null;
+        if (issue.getReporter() != null && issue.getReporter().getUser() != null) {
+            User reporter = userRepository.findById(issue.getReporter().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được làm báo cáo"));
+
+            reporterResponse = userMapper.getUserResponse(reporter);
+            UserProfile reporterProfile = profileRepository.findByUserId(reporter.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được làm báo cáo"));
+
+            reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
+        }
+
         GetIssueResponse response = new GetIssueResponse();
         response.setId(issue.getId());
         response.setLabel(issue.getLabel());
@@ -198,6 +229,9 @@ public class IssueService implements IIssueService {
         response.setPriority(issue.getPriority().toString());
         response.setStatus(issue.getStatus().toString());
         response.setSeverity(issue.getSeverity().name());
+        response.setUser(creatorResponse);
+        response.setAssignee(assigneeResponse);
+        response.setReporter(reporterResponse);
         return response;
     }
 }

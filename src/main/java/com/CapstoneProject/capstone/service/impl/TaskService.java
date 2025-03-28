@@ -201,14 +201,14 @@ public class TaskService implements ITaskService {
 
         GetUserResponse reporterResponse = null;
         if (task.getReporter() != null && task.getReporter().getUser() != null) {
-            User assignee = userRepository.findById(task.getReporter().getUser().getId())
+            User reporter = userRepository.findById(task.getReporter().getUser().getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người được làm báo cáo"));
 
-            reporterResponse = userMapper.getUserResponse(assignee);
-            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+            reporterResponse = userMapper.getUserResponse(reporter);
+            UserProfile reporterProfile = profileRepository.findByUserId(reporter.getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được làm báo cáo"));
 
-            reporterResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+            reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
         }
 
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
@@ -375,6 +375,28 @@ public class TaskService implements ITaskService {
         issue.setCreatedBy(task.getReporter());
         issueRepository.save(issue);
 
+        User creator = userRepository.findById(issue.getCreatedBy().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo issue"));
+        GetUserResponse creatorResponse = userMapper.getUserResponse(creator);
+
+        UserProfile creatorProfile = profileRepository.findByUserId(creator.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo issue"));
+        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
+
+        User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người nhận issue"));
+        GetUserResponse assigneeResponse = userMapper.getUserResponse(assignee);
+        UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người nhận issue"));
+        assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+
+        User reporter = userRepository.findById(issue.getReporter().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người báo cáo issue"));
+        GetUserResponse reporterResponse = userMapper.getUserResponse(reporter);
+        UserProfile reporterProfile = profileRepository.findByUserId(reporter.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người báo cáo issue"));
+        reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
+
         CreateNewIssueByTaskResponse response = new CreateNewIssueByTaskResponse();
         response.setId(issue.getId());
         response.setLabel(issue.getLabel());
@@ -385,6 +407,9 @@ public class TaskService implements ITaskService {
         response.setDueDate(issue.getDueDate());
         response.setPriority(issue.getPriority().name());
         response.setSeverity(issue.getSeverity().name());
+        response.setUser(creatorResponse);
+        response.setAssignee(assigneeResponse);
+        response.setReporter(reporterResponse);
         return response;
     }
 

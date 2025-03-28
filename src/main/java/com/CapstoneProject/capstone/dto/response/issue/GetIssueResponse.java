@@ -25,4 +25,6 @@ public class GetIssueResponse {
     private String status;
     private String severity;
     private GetUserResponse user;
+    private GetUserResponse assignee;
+    private GetUserResponse reporter;
 }

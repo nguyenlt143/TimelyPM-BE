@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.dto.response.issue;
 
+import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,4 +23,7 @@ public class CreateNewIssueByTaskResponse {
     private Date dueDate;
     private String priority;
     private String severity;
+    private GetUserResponse user;
+    private GetUserResponse assignee;
+    private GetUserResponse reporter;
 }
