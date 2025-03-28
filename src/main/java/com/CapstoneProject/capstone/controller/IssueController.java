@@ -31,4 +31,10 @@ public class IssueController {
         List<GetIssueResponse> response = issueService.getIssues(projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách issue thành công", response));
     }
+
+    @GetMapping(UrlConstant.ISSUE.GET_ISSUE_BY_TASK)
+    public ResponseEntity<BaseResponse<GetIssueResponse>> getIssueByTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam UUID taskId) {
+        GetIssueResponse response = issueService.getIssueByTask(id, projectId, topicId,taskId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Lấy issue thành công", response));
+    }
 }

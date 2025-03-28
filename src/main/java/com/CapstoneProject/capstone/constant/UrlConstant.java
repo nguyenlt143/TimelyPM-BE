@@ -45,6 +45,7 @@ public class UrlConstant {
         public static final String ISSUE = API + "/issue";
         public static final String CREATE = "/create";
         public static final String GET_ISSUES = "";
+        public static final String GET_ISSUE_BY_TASK = "/{id}/task";
     }
 
     public static class QUESTION {
