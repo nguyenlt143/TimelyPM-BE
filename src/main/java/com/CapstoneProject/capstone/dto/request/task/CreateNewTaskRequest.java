@@ -15,7 +15,6 @@ import java.util.UUID;
 public class CreateNewTaskRequest {
     private UUID assigneeTo;
     private UUID reporter;
-    private String label;
     private String summer;
     private String description;
     private String attachment;

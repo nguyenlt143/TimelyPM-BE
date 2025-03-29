@@ -14,7 +14,6 @@ import java.util.UUID;
 @Setter
 public class CreateNewIssueRequest {
     private UUID assigneeTo;
-    private String label;
     private String summer;
     private String description;
     private String attachment;

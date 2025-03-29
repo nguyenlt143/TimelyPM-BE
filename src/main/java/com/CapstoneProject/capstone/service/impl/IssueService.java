@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +39,7 @@ public class IssueService implements IIssueService {
     private final UserProfileRepository profileRepository;
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
+    private final UserProfileRepository userProfileRepository;
 
     @Override
     public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request) {
@@ -70,9 +72,12 @@ public class IssueService implements IIssueService {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
+        int nextIssueNumber = issueRepository.findMaxIssueNumberByTopicId(topicId).orElse(0) + 1;
+        String issueLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), nextIssueNumber);
+
         ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         Issue issue = new Issue();
-        issue.setLabel(request.getLabel());
+        issue.setLabel(issueLabel);
         issue.setSummer(request.getSummer());
         issue.setDescription(request.getDescription());
         issue.setAttachment(request.getAttachment());
@@ -112,42 +117,144 @@ public class IssueService implements IIssueService {
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
         UUID userId = AuthenUtil.getCurrentUserId();
 
-        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new NotFoundException("Bạn không phải thành viên của project này"));
 
         Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
-        if(!topic.getProject().getId().equals(project.getId())){
+        if (!topic.getProject().getId().equals(project.getId())) {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
         List<Issue> issues = issueRepository.findByTopicId(topicId);
-
-        List<GetIssueResponse> responses = new ArrayList<>();
-        for(Issue issue : issues){
-            GetIssueResponse response = new GetIssueResponse();
-            response.setId(issue.getId());
-            response.setLabel(issue.getLabel());
-            response.setSummer(issue.getSummer());
-            response.setDescription(issue.getDescription());
-            response.setAttachment(issue.getAttachment());
-            response.setStartDate(issue.getStartDate());
-            response.setDueDate(issue.getDueDate());
-            response.setPriority(issue.getPriority().toString());
-            response.setStatus(issue.getStatus().toString());
-            User user = userRepository.findById(issue.getAssignee().getUser().getId())
+        List<GetIssueResponse> responses = issues.stream().map(issue -> {
+            User user = userRepository.findById(issue.getCreatedBy().getUser().getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
-
             GetUserResponse userResponse = userMapper.getUserResponse(user);
-
             UserProfile userProfile = profileRepository.findByUserId(user.getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
 
+            User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse userAssigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile userProfileAssignee = userProfileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
+            User reporter = userRepository.findById(issue.getReporter().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse userReporterResponse = userMapper.getUserResponse(reporter);
+            UserProfile userProfileReporter = userProfileRepository.findByUserId(reporter.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
             GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
+            GetProfileResponse userProfileAssigneeResponse = userProfileMapper.toProfile(userProfileAssignee);
+            GetProfileResponse userProfileReporterResponse = userProfileMapper.toProfile(userProfileReporter);
+
+            userAssigneeResponse.setProfile(userProfileAssigneeResponse);
             userResponse.setProfile(profileResponse);
-            response.setUser(userResponse);
-            responses.add(response);
-        }
+            userReporterResponse.setProfile(userProfileReporterResponse);
+
+            GetIssueResponse issueResponse = new GetIssueResponse();
+            issueResponse.setId(issue.getId());
+            issueResponse.setLabel(issue.getLabel());
+            issueResponse.setSummer(issue.getSummer());
+            issueResponse.setDescription(issue.getDescription());
+            issueResponse.setAttachment(issue.getAttachment());
+            issueResponse.setStartDate(issue.getStartDate());
+            issueResponse.setDueDate(issue.getDueDate());
+            issueResponse.setPriority(issue.getPriority().toString());
+            issueResponse.setSeverity(issue.getSeverity().toString());
+            issueResponse.setStatus(issue.getStatus().toString());
+            issueResponse.setUser(userResponse);
+            issueResponse.setAssignee(userAssigneeResponse);
+            issueResponse.setReporter(userReporterResponse);
+            return issueResponse;
+        }).collect(Collectors.toList());
         return responses;
     }
+
+    @Override
+    public GetIssueResponse getIssue(UUID id, UUID projectId, UUID topicId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Issue issue = issueRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy issue"));
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new NotFoundException("Bạn không phải thành viên của project này"));
+
+        boolean isPM = (issue.getCreatedBy() != null && issue.getCreatedBy().getUser() != null)
+                && issue.getCreatedBy().getUser().getId().equals(userId);
+
+        boolean isAssignee = (issue.getAssignee() != null && issue.getAssignee().getUser() != null)
+                && issue.getAssignee().getUser().getId().equals(userId);
+
+        boolean isReporter = (issue.getReporter() != null && issue.getReporter().getUser() != null)
+                && issue.getReporter().getUser().getId().equals(userId);
+
+        if (!isPM && !isAssignee && !isReporter) {
+            throw new ForbiddenException("Bạn không có quyền xem issue này");
+        }
+
+        User creator = userRepository.findById(issue.getCreatedBy().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo issue"));
+        GetUserResponse creatorResponse = userMapper.getUserResponse(creator);
+
+        UserProfile creatorProfile = profileRepository.findByUserId(creator.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo issue"));
+        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
+
+        GetUserResponse assigneeResponse = null;
+        if (issue.getAssignee() != null && issue.getAssignee().getUser() != null) {
+            User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao issue"));
+
+            assigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao issue"));
+
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
+
+        GetUserResponse reporterResponse = null;
+        if (issue.getReporter() != null && issue.getReporter().getUser() != null) {
+            User reporter = userRepository.findById(issue.getReporter().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người báo cáo issue"));
+
+            reporterResponse = userMapper.getUserResponse(reporter);
+            UserProfile reporterProfile = profileRepository.findByUserId(reporter.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người báo cáo issue"));
+
+            reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
+        }
+
+        GetIssueResponse issueResponse = new GetIssueResponse();
+        issueResponse.setId(issue.getId());
+        issueResponse.setLabel(issue.getLabel());
+        issueResponse.setDescription(issue.getDescription());
+        issueResponse.setSummer(issue.getSummer());
+        issueResponse.setAttachment(issue.getAttachment());
+        issueResponse.setStartDate(issue.getStartDate());
+        issueResponse.setDueDate(issue.getDueDate());
+        issueResponse.setPriority(issue.getPriority().name());
+        issueResponse.setStatus(issue.getStatus().name());
+        issueResponse.setSeverity(issue.getSeverity().name());
+        issueResponse.setUser(creatorResponse);
+        issueResponse.setAssignee(assigneeResponse);
+        issueResponse.setReporter(reporterResponse);
+
+        return issueResponse;
+    }
+
 
     @Override
     public GetIssueResponse getIssueByTask(UUID id, UUID projectId, UUID topicId, UUID taskId) {

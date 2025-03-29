@@ -10,5 +10,6 @@ import java.util.UUID;
 public interface IIssueService {
     CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request);
     List<GetIssueResponse> getIssues(UUID projectId, UUID topicId);
+    GetIssueResponse getIssue(UUID id, UUID projectId, UUID topicId);
     GetIssueResponse getIssueByTask(UUID id, UUID projectId, UUID topicId, UUID taskId);
 }

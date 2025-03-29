@@ -77,7 +77,11 @@ public class TaskService implements ITaskService {
         if(!roleReporter.getName().equals(RoleEnum.QA)){
             throw new InvalidRoleException("Không phải role thực hiện report, reporter là role QA");
         }
+        int nextTaskNumber = taskRepository.findMaxTaskNumberByTopicId(topicId).orElse(0) + 1;
+        String taskLabel = String.format("%s-%s-Task-%03d", project.getName(), topic.getLabels(), nextTaskNumber);
+
         Task task = taskMapper.toModel(request);
+        task.setLabel(taskLabel);
         task.setTopic(topic);
         task.setAssignee(projectMember);
         task.setReporter(reporter);
