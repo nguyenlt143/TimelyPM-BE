@@ -4,6 +4,7 @@ import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueRequest;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
+import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
 import com.CapstoneProject.capstone.enums.SeverityEnum;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -341,4 +343,77 @@ public class IssueService implements IIssueService {
         response.setReporter(reporterResponse);
         return response;
     }
+
+    @Override
+    public GetIssueResponse updateIssue(UUID id, UUID projectId, UUID topicId, String status) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Issue issue = issueRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy issue"));
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
+        boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
+        boolean isAssignee = issue.getAssignee().getUser().getId().equals(userId);
+
+        if (!isPM && !isAssignee) {
+            throw new ForbiddenException("Bạn không có quyền cập nhật issue này");
+        }
+
+        StatusEnum newStatus;
+        try {
+            newStatus = StatusEnum.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new InvalidEnumException("Trạng thái không hợp lệ! Chỉ chấp nhận OPEN, INPROGRESS, DONE.");
+        }
+
+        User creator = userRepository.findById(issue.getCreatedBy().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo issue"));
+        GetUserResponse creatorResponse = userMapper.getUserResponse(creator);
+
+        UserProfile creatorProfile = profileRepository.findByUserId(creator.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo issue"));
+        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
+
+        GetUserResponse assigneeResponse = null;
+        if (issue.getAssignee() != null && issue.getAssignee().getUser() != null) {
+            User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao issue"));
+
+            assigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao issue"));
+
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
+
+        issue.setStatus(newStatus);
+        issue.setUpdatedAt(LocalDateTime.now());
+        issueRepository.save(issue);
+
+        GetIssueResponse issueResponse = new GetIssueResponse();
+        issueResponse.setId(issue.getId());
+        issueResponse.setLabel(issue.getLabel());
+        issueResponse.setSummer(issue.getSummer());
+        issueResponse.setDescription(issue.getDescription());
+        issueResponse.setAttachment(issue.getAttachment());
+        issueResponse.setStartDate(issue.getStartDate());
+        issueResponse.setDueDate(issue.getDueDate());
+        issueResponse.setPriority(issue.getPriority().toString());
+        issueResponse.setStatus(issue.getStatus().toString());
+        issueResponse.setSeverity(issue.getSeverity().toString());
+        issueResponse.setUser(creatorResponse);
+        issueResponse.setAssignee(assigneeResponse);
+        return issueResponse;
+    }
+
 }
