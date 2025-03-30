@@ -5,6 +5,7 @@ import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueRequest;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
+import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.service.IIssueService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,5 +37,17 @@ public class IssueController {
     public ResponseEntity<BaseResponse<GetIssueResponse>> getIssueByTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam UUID taskId) {
         GetIssueResponse response = issueService.getIssueByTask(id, projectId, topicId,taskId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy issue thành công", response));
+    }
+
+    @PutMapping(UrlConstant.ISSUE.UPDATE_ISSUE)
+    public ResponseEntity<BaseResponse<GetIssueResponse>> UpdateIssue(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam String status) {
+        GetIssueResponse response = issueService.updateIssue(id, projectId, topicId, status);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Update task thành công", response));
+    }
+
+    @DeleteMapping(UrlConstant.ISSUE.DELETE_ISSUE)
+    public ResponseEntity<BaseResponse<Boolean>> deleteIssue(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId) {
+        boolean response = issueService.deleteIssue(id, projectId, topicId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Xóa task thành công", response));
     }
 }

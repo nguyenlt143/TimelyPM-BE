@@ -5,6 +5,7 @@ import com.CapstoneProject.capstone.dto.request.question.CreateNewQuestionReques
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.question.CreateNewQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.question.GetQuestionResponse;
+import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.service.IQuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,5 +31,11 @@ public class QuestionController {
     public ResponseEntity<BaseResponse<List<GetQuestionResponse>>> GetAllQuestion(@RequestParam UUID projectId, @RequestParam UUID topicId) {
         List<GetQuestionResponse> response = questionService.getQuestions(projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách question thành công", response));
+    }
+
+    @GetMapping(UrlConstant.QUESTION.GET_QUESTION)
+    public ResponseEntity<BaseResponse<GetQuestionResponse>> GetQuestion(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId) {
+        GetQuestionResponse response = questionService.getQuestion(id, projectId, topicId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Lấy question thành công", response));
     }
 }

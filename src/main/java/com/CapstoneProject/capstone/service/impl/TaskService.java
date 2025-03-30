@@ -3,6 +3,7 @@ package com.CapstoneProject.capstone.service.impl;
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueByTaskRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
+import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.task.CreateNewTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import javax.imageio.plugins.bmp.BMPImageWriteParam;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -143,10 +145,53 @@ public class TaskService implements ITaskService {
             userResponse.setProfile(profileResponse);
             userReporterResponse.setProfile(userProfileReporterResponse);
 
+            List<Issue> issues = issueRepository.findAllByTaskId(task.getId());
+            List<GetIssueResponse> issueResponses = issues.stream().map(issue -> {
+                GetIssueResponse issueResponse = new GetIssueResponse();
+                issueResponse.setId(issue.getId());
+                issueResponse.setLabel(issue.getLabel());
+                issueResponse.setSummer(issue.getSummer());
+                issueResponse.setDescription(issue.getDescription());
+                issueResponse.setAttachment(issue.getAttachment());
+                issueResponse.setStartDate(issue.getStartDate());
+                issueResponse.setDueDate(issue.getDueDate());
+                issueResponse.setPriority(issue.getPriority().name());
+                issueResponse.setStatus(issue.getStatus().name());
+                issueResponse.setSeverity(issue.getSeverity().name());
+
+                User issueAssignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+                GetUserResponse issueAssigneeResponse = userMapper.getUserResponse(issueAssignee);
+                UserProfile issueAssigneeProfile = userProfileRepository.findByUserId(issueAssignee.getId())
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+                issueAssigneeResponse.setProfile(userProfileMapper.toProfile(issueAssigneeProfile));
+
+                User issueReporter = userRepository.findById(issue.getReporter().getUser().getId())
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+                GetUserResponse issueReporterResponse = userMapper.getUserResponse(issueReporter);
+                UserProfile issueReporterProfile = userProfileRepository.findByUserId(issueReporter.getId())
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+                issueReporterResponse.setProfile(userProfileMapper.toProfile(issueReporterProfile));
+
+                User issueCreatedBy = userRepository.findById(issue.getCreatedBy().getUser().getId())
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+                GetUserResponse issueCreatedByResponse = userMapper.getUserResponse(issueCreatedBy);
+                UserProfile issueCreatedByProfile = userProfileRepository.findByUserId(issueCreatedBy.getId())
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+                issueCreatedByResponse.setProfile(userProfileMapper.toProfile(issueCreatedByProfile));
+
+                issueResponse.setAssignee(issueAssigneeResponse);
+                issueResponse.setReporter(issueReporterResponse);
+                issueResponse.setUser(issueCreatedByResponse);
+
+                return issueResponse;
+            }).collect(Collectors.toList());
+
             GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
             taskResponse.setUser(userResponse);
             taskResponse.setAssignee(userAssigneeResponse);
             taskResponse.setReporter(userReporterResponse);
+            taskResponse.setIssues(issueResponses);
             return taskResponse;
         }).collect(Collectors.toList());
         return responses;
@@ -214,7 +259,47 @@ public class TaskService implements ITaskService {
 
             reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
         }
+        List<Issue> issues = issueRepository.findAllByTaskId(task.getId());
+        List<GetIssueResponse> issueResponses = new ArrayList<>();
+        for (Issue issue : issues) {
+            GetIssueResponse issueResponse = new GetIssueResponse();
+            issueResponse.setId(issue.getId());
+            issueResponse.setLabel(issue.getLabel());
+            issueResponse.setSummer(issue.getSummer());
+            issueResponse.setDescription(issue.getDescription());
+            issueResponse.setAttachment(issue.getAttachment());
+            issueResponse.setStartDate(issue.getStartDate());
+            issueResponse.setDueDate(issue.getDueDate());
+            issueResponse.setPriority(issue.getPriority().name());
+            issueResponse.setStatus(issue.getStatus().name());
+            issueResponse.setSeverity(issue.getSeverity().name());
 
+            User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse assigneeResponseIssue = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = userProfileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+            assigneeResponseIssue.setProfile(userProfileMapper.toProfile(assigneeProfile));
+
+            User reporter = userRepository.findById(issue.getReporter().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse reporterResponseIssue = userMapper.getUserResponse(reporter);
+            UserProfile reporterProfile = userProfileRepository.findByUserId(reporter.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+            reporterResponseIssue.setProfile(userProfileMapper.toProfile(reporterProfile));
+
+            User createdBy = userRepository.findById(issue.getCreatedBy().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse createdByResponse = userMapper.getUserResponse(createdBy);
+            UserProfile createdByProfile = userProfileRepository.findByUserId(createdBy.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+            createdByResponse.setProfile(userProfileMapper.toProfile(createdByProfile));
+
+            issueResponse.setAssignee(assigneeResponseIssue);
+            issueResponse.setReporter(reporterResponseIssue);
+            issueResponse.setUser(createdByResponse);
+            issueResponses.add(issueResponse);
+        }
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
         taskResponse.setUser(creatorResponse);
         taskResponse.setAssignee(assigneeResponse);

@@ -50,23 +50,24 @@ public class QuestionService implements IQuestionService {
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
         UUID userId = AuthenUtil.getCurrentUserId();
 
-        User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Không tìm thấy Project Manager"));
-        if(!pmUser.getId().equals(userId)){
-            throw new ForbiddenException("Bạn không có quyền");
-        }
+        ProjectMember pmUser = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
 
         Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
         if(!topic.getProject().getId().equals(project.getId())){
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
+        int nextQuestionNumber = questionRepository.findMaxQuestionNumberByTopicId(topicId).orElse(0) + 1;
+        String questionLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), nextQuestionNumber);
+
         ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         Question question = new Question();
-        question.setLabel(request.getLabel());
+        question.setLabel(questionLabel);
         question.setSummer(request.getSummer());
         question.setDescription(request.getDescription());
         question.setAttachment(request.getAttachment());
         question.setAssignee(projectMember);
+        question.setCreatedBy(pmUser);
         question.setStartDate(request.getStartDate());
         question.setDueDate(request.getDueDate());
         question.setStatus(StatusEnum.PENDING);
@@ -131,9 +132,82 @@ public class QuestionService implements IQuestionService {
 
             GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
             userResponse.setProfile(profileResponse);
-            response.setUser(userResponse);
+
+            User createBy = userRepository.findById(question.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+
+            GetUserResponse createByResponse = userMapper.getUserResponse(createBy);
+
+            UserProfile createByProfile = profileRepository.findByUserId(createBy.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
+            GetProfileResponse createByProfileResponse = userProfileMapper.toProfile(createByProfile);
+            createByResponse.setProfile(createByProfileResponse);
+            response.setAssignee(userResponse);
+            response.setCreateBy(createByResponse);
             responses.add(response);
         }
         return responses;
+    }
+
+    @Override
+    public GetQuestionResponse getQuestion(UUID id, UUID projectId, UUID topicId) {
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
+
+        Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+        if(!topic.getProject().getId().equals(project.getId())){
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi này"));
+
+        boolean isPM = (question.getCreatedBy() != null && question.getCreatedBy().getUser() != null)
+                && question.getCreatedBy().getUser().getId().equals(userId);
+
+        boolean isAssignee = (question.getAssignee() != null && question.getAssignee().getUser() != null)
+                && question.getAssignee().getUser().getId().equals(userId);
+
+        boolean isCreateBy = (question.getCreatedBy() != null && question.getCreatedBy().getUser() != null)
+                && question.getCreatedBy().getUser().getId().equals(userId);
+
+        if (!isPM && !isAssignee && !isCreateBy) {
+            throw new ForbiddenException("Bạn không có quyền xem câu hỏi này");
+        }
+
+        User createBy = userRepository.findById(question.getAssignee().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+        GetUserResponse creatorResponse = userMapper.getUserResponse(createBy);
+        UserProfile creatorProfile = profileRepository.findByUserId(createBy.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo câu hỏi"));
+        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
+
+
+        GetUserResponse assigneeResponse = null;
+        if (question.getAssignee() != null && question.getAssignee().getUser() != null) {
+            User assignee = userRepository.findById(question.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao câu hỏi"));
+
+            assigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao câu hỏi"));
+
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
+        GetQuestionResponse questionResponse = new GetQuestionResponse();
+        questionResponse.setId(id);
+        questionResponse.setLabel(question.getLabel());
+        questionResponse.setSummer(question.getSummer());
+        questionResponse.setDescription(question.getDescription());
+        questionResponse.setAttachment(question.getAttachment());
+        questionResponse.setStartDate(question.getStartDate());
+        questionResponse.setDueDate(question.getDueDate());
+        questionResponse.setPriority(question.getPriority().toString());
+        questionResponse.setStatus(question.getStatus().toString());
+        questionResponse.setAssignee(assigneeResponse);
+        questionResponse.setCreateBy(creatorResponse);
+        return questionResponse;
     }
 }

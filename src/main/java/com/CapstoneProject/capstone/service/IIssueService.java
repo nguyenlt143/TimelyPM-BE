@@ -14,4 +14,5 @@ public interface IIssueService {
     GetIssueResponse getIssue(UUID id, UUID projectId, UUID topicId);
     GetIssueResponse getIssueByTask(UUID id, UUID projectId, UUID topicId, UUID taskId);
     GetIssueResponse updateIssue(UUID id, UUID projectId, UUID topicId, String status);
+    Boolean deleteIssue(UUID id, UUID projectId, UUID topicId);
 }

@@ -77,13 +77,18 @@ public class IssueService implements IIssueService {
         int nextIssueNumber = issueRepository.findMaxIssueNumberByTopicId(topicId).orElse(0) + 1;
         String issueLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), nextIssueNumber);
 
-        ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember assignee = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember reporter = projectMemberRepository.findById(request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember pmMember = projectMemberRepository.findByProjectIdAndUserId(projectId, pmUser.getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
+
         Issue issue = new Issue();
         issue.setLabel(issueLabel);
         issue.setSummer(request.getSummer());
         issue.setDescription(request.getDescription());
         issue.setAttachment(request.getAttachment());
-        issue.setAssignee(projectMember);
+        issue.setAssignee(assignee);
+        issue.setCreatedBy(reporter);
+        issue.setCreatedBy(pmMember);
         issue.setStartDate(request.getStartDate());
         issue.setDueDate(request.getDueDate());
         issue.setStatus(StatusEnum.PENDING);
@@ -94,7 +99,7 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issue.setTopic(topic);
         issueRepository.save(issue);
-        User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+        User user = userRepository.findById(assignee.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
         UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
@@ -415,5 +420,43 @@ public class IssueService implements IIssueService {
         issueResponse.setAssignee(assigneeResponse);
         return issueResponse;
     }
+
+    @Override
+    public Boolean deleteIssue(UUID id, UUID projectId, UUID topicId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Issue issue = issueRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy issue"));
+
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        boolean isPM = userRepository.findUserWithRolePMByProjectId(projectId)
+                .map(pmUser -> pmUser.getId().equals(userId))
+                .orElse(false);
+
+        boolean isAssignee = (issue.getAssignee() != null && issue.getAssignee().getUser() != null)
+                && issue.getAssignee().getUser().getId().equals(userId);
+
+        boolean isReporter = (issue.getReporter() != null && issue.getReporter().getUser() != null)
+                && issue.getReporter().getUser().getId().equals(userId);
+
+        if (!isPM && !isAssignee && !isReporter) {
+            throw new ForbiddenException("Bạn không có quyền xóa issue này");
+        }
+
+        issue.setActive(false);
+        issue.setUpdatedAt(LocalDateTime.now());
+        issueRepository.save(issue);
+        return true;
+    }
+
 
 }

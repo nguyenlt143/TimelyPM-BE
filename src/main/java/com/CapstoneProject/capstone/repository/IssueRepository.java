@@ -24,4 +24,7 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
             """, nativeQuery = true)
     Optional<Integer> findMaxIssueNumberByTopicId(@Param("topicId") UUID topicId);
 
+    @Query(value = "SELECT * FROM issue WHERE active = true AND task_id = :taskId", nativeQuery = true)
+    List<Issue> findAllByTaskId(@Param("taskId") UUID taskId);
+
 }

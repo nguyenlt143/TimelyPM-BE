@@ -46,12 +46,15 @@ public class UrlConstant {
         public static final String CREATE = "/create";
         public static final String GET_ISSUES = "";
         public static final String GET_ISSUE_BY_TASK = "/{id}/task";
+        public static final String UPDATE_ISSUE = "/{id}";
+        public static final String DELETE_ISSUE = "/{id}";
     }
 
     public static class QUESTION {
         public static final String QUESTION = API + "/question";
         public static final String CREATE = "/create";
         public static final String GET_QUESTIONS = "";
+        public static final String GET_QUESTION = "/{id}";
     }
 
     public static class MEMBER {

@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.dto.response.task;
 
+import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Date;
+import java.util.List;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -26,4 +28,5 @@ public class GetTaskResponse {
     private GetUserResponse user;
     private GetUserResponse assignee;
     private GetUserResponse reporter;
+    private List<GetIssueResponse> issues;
 }

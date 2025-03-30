@@ -23,5 +23,6 @@ public class GetQuestionResponse {
     private Date dueDate;
     private String priority;
     private String status;
-    private GetUserResponse user;
+    private GetUserResponse assignee;
+    private GetUserResponse createBy;
 }
