@@ -84,6 +84,7 @@ public class TaskService implements ITaskService {
 
         Task task = taskMapper.toModel(request);
         task.setLabel(taskLabel);
+        task.setPriority(priority);
         task.setTopic(topic);
         task.setAssignee(projectMember);
         task.setReporter(reporter);
@@ -453,8 +454,10 @@ public class TaskService implements ITaskService {
         issue.setAttachment(request.getAttachment());
         issue.setStartDate(request.getStartDate());
         issue.setDueDate(request.getDueDate());
+        issue.setStatus(StatusEnum.PENDING);
         issue.setPriority(priority);
         issue.setSeverity(severity);
+        issue.setTopic(topic);
         issue.setTask(task);
         issue.setActive(true);
         issue.setCreatedAt(LocalDateTime.now());
