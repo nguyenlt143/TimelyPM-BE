@@ -14,10 +14,12 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByTopicId(@Param("topicId") UUID topicId);
 
     @Query(value = """
-            SELECT MAX(CAST(SUBSTRING_INDEX(t.label, ' ', -1) AS UNSIGNED))
-            FROM task t WHERE t.topic_id = :topicId
+            SELECT t.label
+            FROM task t
+            WHERE t.topic_id = :topicId
+            ORDER BY t.label DESC
+            LIMIT 1
             """, nativeQuery = true)
-    Optional<Integer> findMaxTaskNumberByTopicId(@Param("topicId") UUID topicId);
-
+    Optional<String> findMaxTaskLabelByTopicId(@Param("topicId") UUID topicId);
 
 }

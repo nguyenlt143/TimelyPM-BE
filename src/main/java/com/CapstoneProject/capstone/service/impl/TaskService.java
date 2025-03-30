@@ -79,8 +79,23 @@ public class TaskService implements ITaskService {
         if(!roleReporter.getName().equals(RoleEnum.QA)){
             throw new InvalidRoleException("Không phải role thực hiện report, reporter là role QA");
         }
-        int nextTaskNumber = taskRepository.findMaxTaskNumberByTopicId(topicId).orElse(0) + 1;
-        String taskLabel = String.format("%s-%s-Task-%03d", project.getName(), topic.getLabels(), nextTaskNumber);
+
+        Optional<String> maxTaskLabelOpt = taskRepository.findMaxTaskLabelByTopicId(topicId);
+        int newTaskNumber = 1;
+
+        if (maxTaskLabelOpt.isPresent()) {
+            String maxTaskLabel = maxTaskLabelOpt.get();
+
+            String[] parts = maxTaskLabel.split("-");
+            String lastPart = parts[parts.length - 1];
+            try {
+                newTaskNumber = Integer.parseInt(lastPart);
+                newTaskNumber++;
+            } catch (NumberFormatException e) {
+                System.out.println("Lỗi khi chuyển đổi số: " + e.getMessage());
+            }
+        }
+        String taskLabel = String.format("%s-%s-Task-%03d", project.getName(), topic.getLabels(), newTaskNumber);
 
         Task task = taskMapper.toModel(request);
         task.setLabel(taskLabel);
