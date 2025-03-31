@@ -20,8 +20,11 @@ import com.CapstoneProject.capstone.util.AuthenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.plugins.bmp.BMPImageWriteParam;
+import java.io.IOException;
+import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,9 +47,10 @@ public class TaskService implements ITaskService {
     private final UserProfileRepository userProfileRepository;
     private final RoleRepository roleRepository;
     private final IssueRepository issueRepository;
+    private final GoogleDriveService googleDriveService;
 
     @Override
-    public CreateNewTaskResponse createNewTask(UUID projectId, UUID topicId, CreateNewTaskRequest request) {
+    public CreateNewTaskResponse createNewTask(UUID projectId, UUID topicId, CreateNewTaskRequest request, MultipartFile file) throws IOException {
         String priorityStr = request.getPriority();
         PriorityEnum priority;
         try {
@@ -82,7 +86,7 @@ public class TaskService implements ITaskService {
 
         Optional<String> maxTaskLabelOpt = taskRepository.findMaxTaskLabelByTopicId(topicId);
         int newTaskNumber = 1;
-
+        String url = googleDriveService.uploadFileToDrive(file);
         if (maxTaskLabelOpt.isPresent()) {
             String maxTaskLabel = maxTaskLabelOpt.get();
 
@@ -99,11 +103,14 @@ public class TaskService implements ITaskService {
 
         Task task = taskMapper.toModel(request);
         task.setLabel(taskLabel);
+        task.setAttachment(url);
         task.setPriority(priority);
         task.setTopic(topic);
         task.setAssignee(projectMember);
         task.setReporter(reporter);
         task.setCreatedBy(pmMember);
+        task.setStartDate(Date.valueOf(request.getStartDate()));
+        task.setDueDate(Date.valueOf(request.getDueDate()));
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         task.setActive(true);

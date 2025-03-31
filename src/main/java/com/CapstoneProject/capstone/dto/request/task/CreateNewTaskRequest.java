@@ -1,11 +1,14 @@
 package com.CapstoneProject.capstone.dto.request.task;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -17,8 +20,9 @@ public class CreateNewTaskRequest {
     private UUID reporter;
     private String summer;
     private String description;
-    private String attachment;
-    private Date startDate;
-    private Date dueDate;
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dueDate;
     private String priority;
 }

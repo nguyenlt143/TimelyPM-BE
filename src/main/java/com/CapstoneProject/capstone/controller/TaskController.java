@@ -10,9 +10,12 @@ import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.service.ITaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,9 +25,9 @@ import java.util.UUID;
 public class TaskController {
     private final ITaskService taskService;
 
-    @PostMapping(UrlConstant.TASK.CREATE)
-    public ResponseEntity<BaseResponse<CreateNewTaskResponse>> create(@RequestParam UUID projectId, @RequestParam UUID topicId, @Valid @RequestBody CreateNewTaskRequest request) {
-        CreateNewTaskResponse response = taskService.createNewTask(projectId, topicId, request);
+    @PostMapping(value = UrlConstant.TASK.CREATE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BaseResponse<CreateNewTaskResponse>> create(@RequestParam UUID projectId, @RequestParam UUID topicId, @Valid @ModelAttribute CreateNewTaskRequest request, @RequestParam MultipartFile file) throws IOException {
+        CreateNewTaskResponse response = taskService.createNewTask(projectId, topicId, request, file);
         return ResponseEntity.ok(new BaseResponse<>("200", "Tạo task thành công", response));
     }
 
