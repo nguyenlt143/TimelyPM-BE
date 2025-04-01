@@ -44,7 +44,7 @@ public class TaskController {
     }
 
     @GetMapping(UrlConstant.TASK.GET_TASK)
-    public ResponseEntity<BaseResponse<GetTaskResponse>> GetTask(@PathVariable UUID id,@RequestParam UUID projectId, @RequestParam UUID topicId) {
+    public ResponseEntity<BaseResponse<GetTaskResponse>> GetTask(@PathVariable UUID id,@RequestParam UUID projectId, @RequestParam UUID topicId) throws IOException {
         GetTaskResponse response = taskService.getTask(id, projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy task thành công", response));
     }

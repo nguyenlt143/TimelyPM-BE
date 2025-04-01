@@ -19,10 +19,13 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
     Optional<Issue> findByIdAndTaskId(@Param("id") UUID id, @Param("taskId") UUID taskId);
 
     @Query(value = """
-            SELECT MAX(CAST(SUBSTRING_INDEX(t.label, ' ', -1) AS UNSIGNED))
-            FROM issue t WHERE t.topic_id = :topicId
+            SELECT t.label
+            FROM issue t
+            WHERE t.topic_id = :topicId
+            ORDER BY t.label DESC
+            LIMIT 1
             """, nativeQuery = true)
-    Optional<Integer> findMaxIssueNumberByTopicId(@Param("topicId") UUID topicId);
+    Optional<String> findMaxIssueLabelByTopicId(@Param("topicId") UUID topicId);
 
     @Query(value = "SELECT * FROM issue WHERE active = true AND task_id = :taskId", nativeQuery = true)
     List<Issue> findAllByTaskId(@Param("taskId") UUID taskId);

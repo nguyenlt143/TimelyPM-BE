@@ -8,6 +8,7 @@ import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
 import com.CapstoneProject.capstone.enums.GenderEnum;
 import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
 import com.CapstoneProject.capstone.enums.RoleEnum;
+import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.CapstoneProject.capstone.exception.ForbiddenException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
@@ -182,6 +183,23 @@ public class ProjectService implements IProjectService {
         List<Project> projects = projectRepository.findByUser(userId);
         List<GetProjectResponse> projectResponses = projects.stream().map(GetProjectResponse::new).collect(Collectors.toList());
         return projectResponses;
+    }
+
+    @Override
+    public boolean closeProject(UUID id) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
+
+        User pmUser = userRepository.findUserWithRolePMByProjectId(id).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
+        if(!pmUser.getId().equals(userId)){
+            throw new ForbiddenException("Bạn không có quyền");
+        }
+
+        project.setStatus(StatusEnum.DONE.name());
+        project.setUpdatedAt(LocalDateTime.now());
+        projectRepository.save(project);
+        return true;
     }
 
 

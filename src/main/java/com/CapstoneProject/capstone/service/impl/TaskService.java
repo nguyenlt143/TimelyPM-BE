@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueByTaskRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
+import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
@@ -17,6 +18,7 @@ import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
 import com.CapstoneProject.capstone.service.ITaskService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
+import com.google.api.services.drive.Drive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
@@ -86,7 +88,7 @@ public class TaskService implements ITaskService {
 
         Optional<String> maxTaskLabelOpt = taskRepository.findMaxTaskLabelByTopicId(topicId);
         int newTaskNumber = 1;
-        String url = googleDriveService.uploadFileToDrive(file);
+        GoogleDriveResponse url = googleDriveService.uploadFileToDrive(file);
         if (maxTaskLabelOpt.isPresent()) {
             String maxTaskLabel = maxTaskLabelOpt.get();
 
@@ -103,7 +105,7 @@ public class TaskService implements ITaskService {
 
         Task task = taskMapper.toModel(request);
         task.setLabel(taskLabel);
-        task.setAttachment(url);
+        task.setAttachment(url.getFileUrl());
         task.setPriority(priority);
         task.setTopic(topic);
         task.setAssignee(projectMember);
@@ -122,6 +124,8 @@ public class TaskService implements ITaskService {
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
         userResponse.setProfile(profileResponse);
         CreateNewTaskResponse createNewTaskResponse = taskMapper.toResponse(task);
+        createNewTaskResponse.setAttachment(url.getFileUrl());
+        createNewTaskResponse.setAttachmentName(url.getFileName());
         createNewTaskResponse.setUser(userResponse);
         return createNewTaskResponse;
     }
@@ -175,7 +179,6 @@ public class TaskService implements ITaskService {
                 issueResponse.setLabel(issue.getLabel());
                 issueResponse.setSummer(issue.getSummer());
                 issueResponse.setDescription(issue.getDescription());
-                issueResponse.setAttachment(issue.getAttachment());
                 issueResponse.setStartDate(issue.getStartDate());
                 issueResponse.setDueDate(issue.getDueDate());
                 issueResponse.setPriority(issue.getPriority().name());
@@ -209,9 +212,26 @@ public class TaskService implements ITaskService {
 
                 return issueResponse;
             }).collect(Collectors.toList());
-
+            Drive driveService = null;
+            try {
+                driveService = googleDriveService.getDriveService();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            String fileId = googleDriveService.extractFileId(task.getAttachment());
+            com.google.api.services.drive.model.File file = null;
+            try {
+                file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+            googleDriveResponse.setFileUrl(file.getWebViewLink());
+            googleDriveResponse.setFileName(file.getName());
+            googleDriveResponse.setDownloadUrl(file.getWebContentLink());
             GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
             taskResponse.setUser(userResponse);
+            taskResponse.setAttachment(googleDriveResponse);
             taskResponse.setAssignee(userAssigneeResponse);
             taskResponse.setReporter(userReporterResponse);
             taskResponse.setIssues(issueResponses);
@@ -221,7 +241,7 @@ public class TaskService implements ITaskService {
     }
 
     @Override
-    public GetTaskResponse getTask(UUID id, UUID projectId, UUID topicId) {
+    public GetTaskResponse getTask(UUID id, UUID projectId, UUID topicId) throws IOException {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
 
@@ -282,6 +302,13 @@ public class TaskService implements ITaskService {
 
             reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
         }
+        Drive driveService = googleDriveService.getDriveService();
+        String fileId = googleDriveService.extractFileId(task.getAttachment());
+        com.google.api.services.drive.model.File file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+        GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+        googleDriveResponse.setFileUrl(file.getWebViewLink());
+        googleDriveResponse.setFileName(file.getName());
+        googleDriveResponse.setDownloadUrl(file.getWebContentLink());
         List<Issue> issues = issueRepository.findAllByTaskId(task.getId());
         List<GetIssueResponse> issueResponses = new ArrayList<>();
         for (Issue issue : issues) {
@@ -290,7 +317,6 @@ public class TaskService implements ITaskService {
             issueResponse.setLabel(issue.getLabel());
             issueResponse.setSummer(issue.getSummer());
             issueResponse.setDescription(issue.getDescription());
-            issueResponse.setAttachment(issue.getAttachment());
             issueResponse.setStartDate(issue.getStartDate());
             issueResponse.setDueDate(issue.getDueDate());
             issueResponse.setPriority(issue.getPriority().name());
@@ -324,6 +350,7 @@ public class TaskService implements ITaskService {
             issueResponses.add(issueResponse);
         }
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
+        taskResponse.setAttachment(googleDriveResponse);
         taskResponse.setUser(creatorResponse);
         taskResponse.setAssignee(assigneeResponse);
         taskResponse.setReporter(reporterResponse);

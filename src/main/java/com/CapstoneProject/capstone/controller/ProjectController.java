@@ -73,4 +73,10 @@ public class ProjectController {
         boolean response = projectService.deleteUserFromProject(id, userId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Xóa thành viên thành công", response));
     }
+
+    @PostMapping(UrlConstant.PROJECT.CLOSE_PROJECT)
+    public ResponseEntity<BaseResponse<Boolean>> closeProject(@PathVariable UUID id) {
+        boolean response = projectService.closeProject(id);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Đóng dự án thành công", response));
+    }
 }

@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.service.impl;
 
+import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
@@ -19,7 +20,7 @@ public class GoogleDriveService {
     private static final String APPLICATION_NAME = "Final";
     private static final String FOLDER_ID = "1h2D3ySIqj-0R8y7fyu9ezfIpS4AbvWVy";
 
-    private Drive getDriveService() throws IOException {
+    public Drive getDriveService() throws IOException {
         GoogleCredentials credentials = GoogleCredentials.fromStream(
                         Objects.requireNonNull(getClass().getResourceAsStream("/credential.json")))
                 .createScoped(Collections.singleton(DriveScopes.DRIVE_FILE));
@@ -30,7 +31,7 @@ public class GoogleDriveService {
                 .build();
     }
 
-    public String uploadFileToDrive(MultipartFile file) throws IOException {
+    public GoogleDriveResponse uploadFileToDrive(MultipartFile file) throws IOException {
         Drive driveService = getDriveService();
 
         java.io.File tempFile = java.io.File.createTempFile("temp", null);
@@ -47,6 +48,22 @@ public class GoogleDriveService {
 
         tempFile.delete();
 
-        return uploadedFile.getWebViewLink();
+        GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+        googleDriveResponse.setFileName(file.getOriginalFilename());
+        googleDriveResponse.setFileUrl(uploadedFile.getWebViewLink());
+
+        return googleDriveResponse;
+    }
+
+    public String extractFileId(String fileUrl) {
+        if (fileUrl != null && fileUrl.contains("d/")) {
+            String[] parts = fileUrl.split("d/");
+            String idPart = parts[1];
+            if (idPart.contains("/")) {
+                idPart = idPart.split("/")[0];
+            }
+            return idPart;
+        }
+        throw new IllegalArgumentException("Invalid file URL: " + fileUrl);
     }
 }

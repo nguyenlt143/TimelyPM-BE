@@ -20,6 +20,7 @@ public class UrlConstant {
         public static final String UPDATE_PROJECT = "/{id}";
         public static final String INVITE_PROJECT = "/{id}/invite";
         public static final String DELETE_MEMBER = "/{id}/delete/member";
+        public static final String CLOSE_PROJECT = "/{id}/close";
     }
 
     public static class TOPIC {

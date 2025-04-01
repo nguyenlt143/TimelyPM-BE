@@ -17,7 +17,6 @@ public class CreateNewIssueRequest {
     private UUID reporter;
     private String summer;
     private String description;
-    private String attachment;
     private Date startDate;
     private Date dueDate;
     private String priority;

@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -57,8 +58,21 @@ public class QuestionService implements IQuestionService {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
-        int nextQuestionNumber = questionRepository.findMaxQuestionNumberByTopicId(topicId).orElse(0) + 1;
-        String questionLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), nextQuestionNumber);
+        Optional<String> maxQuestionLabelOpt = questionRepository.findMaxQuestionLabelByTopicId(topicId);
+        int newQuestionNumber = 1;
+        if (maxQuestionLabelOpt.isPresent()) {
+            String maxTaskLabel = maxQuestionLabelOpt.get();
+
+            String[] parts = maxTaskLabel.split("-");
+            String lastPart = parts[parts.length - 1];
+            try {
+                newQuestionNumber = Integer.parseInt(lastPart);
+                newQuestionNumber++;
+            } catch (NumberFormatException e) {
+                System.out.println("Lỗi khi chuyển đổi số: " + e.getMessage());
+            }
+        }
+        String questionLabel = String.format("%s-%s-Task-%03d", project.getName(), topic.getLabels(), newQuestionNumber);
 
         ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         Question question = new Question();

@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueRequest;
+import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
@@ -19,9 +20,12 @@ import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
 import com.CapstoneProject.capstone.service.IIssueService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
+import com.google.api.services.drive.Drive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +46,10 @@ public class IssueService implements IIssueService {
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final UserProfileRepository userProfileRepository;
+    private final GoogleDriveService googleDriveService;
 
     @Override
-    public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request) {
+    public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request, MultipartFile file) throws IOException {
         String priorityStr = request.getPriority();
         PriorityEnum priority;
         try {
@@ -70,12 +75,27 @@ public class IssueService implements IIssueService {
         }
 
         Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
         if(!topic.getProject().getId().equals(project.getId())){
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
-        int nextIssueNumber = issueRepository.findMaxIssueNumberByTopicId(topicId).orElse(0) + 1;
-        String issueLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), nextIssueNumber);
+        GoogleDriveResponse url = googleDriveService.uploadFileToDrive(file);
+        Optional<String> maxIssueLabelOpt = issueRepository.findMaxIssueLabelByTopicId(topicId);
+        int newIssueNumber = 1;
+        if (maxIssueLabelOpt.isPresent()) {
+            String maxTaskLabel = maxIssueLabelOpt.get();
+
+            String[] parts = maxTaskLabel.split("-");
+            String lastPart = parts[parts.length - 1];
+            try {
+                newIssueNumber = Integer.parseInt(lastPart);
+                newIssueNumber++;
+            } catch (NumberFormatException e) {
+                System.out.println("Lỗi khi chuyển đổi số: " + e.getMessage());
+            }
+        }
+        String issueLabel = String.format("%s-%s-Task-%03d", project.getName(), topic.getLabels(), newIssueNumber);
 
         ProjectMember assignee = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         ProjectMember reporter = projectMemberRepository.findById(request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
@@ -85,7 +105,7 @@ public class IssueService implements IIssueService {
         issue.setLabel(issueLabel);
         issue.setSummer(request.getSummer());
         issue.setDescription(request.getDescription());
-        issue.setAttachment(request.getAttachment());
+        issue.setAttachment(url.getFileUrl());
         issue.setAssignee(assignee);
         issue.setCreatedBy(reporter);
         issue.setCreatedBy(pmMember);
@@ -109,7 +129,8 @@ public class IssueService implements IIssueService {
         response.setLabel(issue.getLabel());
         response.setSummer(issue.getSummer());
         response.setDescription(issue.getDescription());
-        response.setAttachment(issue.getAttachment());
+        response.setAttachment(url.getFileUrl());
+        response.setAttachmentName(url.getFileName());
         response.setStartDate(issue.getStartDate());
         response.setDueDate(issue.getDueDate());
         response.setPriority(issue.getPriority().toString());
@@ -160,12 +181,30 @@ public class IssueService implements IIssueService {
             userResponse.setProfile(profileResponse);
             userReporterResponse.setProfile(userProfileReporterResponse);
 
+            Drive driveService = null;
+            try {
+                driveService = googleDriveService.getDriveService();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            String fileId = googleDriveService.extractFileId(issue.getAttachment());
+            com.google.api.services.drive.model.File file = null;
+            try {
+                file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+            googleDriveResponse.setFileUrl(file.getWebViewLink());
+            googleDriveResponse.setFileName(file.getName());
+            googleDriveResponse.setDownloadUrl(file.getWebContentLink());
+
             GetIssueResponse issueResponse = new GetIssueResponse();
             issueResponse.setId(issue.getId());
             issueResponse.setLabel(issue.getLabel());
             issueResponse.setSummer(issue.getSummer());
             issueResponse.setDescription(issue.getDescription());
-            issueResponse.setAttachment(issue.getAttachment());
+            issueResponse.setAttachment(googleDriveResponse);
             issueResponse.setStartDate(issue.getStartDate());
             issueResponse.setDueDate(issue.getDueDate());
             issueResponse.setPriority(issue.getPriority().toString());
@@ -180,7 +219,7 @@ public class IssueService implements IIssueService {
     }
 
     @Override
-    public GetIssueResponse getIssue(UUID id, UUID projectId, UUID topicId) {
+    public GetIssueResponse getIssue(UUID id, UUID projectId, UUID topicId) throws IOException {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
 
@@ -244,12 +283,20 @@ public class IssueService implements IIssueService {
             reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
         }
 
+        Drive driveService = googleDriveService.getDriveService();
+        String fileId = googleDriveService.extractFileId(issue.getAttachment());
+        com.google.api.services.drive.model.File file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+        GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+        googleDriveResponse.setFileUrl(file.getWebViewLink());
+        googleDriveResponse.setFileName(file.getName());
+        googleDriveResponse.setDownloadUrl(file.getWebContentLink());
+
         GetIssueResponse issueResponse = new GetIssueResponse();
         issueResponse.setId(issue.getId());
         issueResponse.setLabel(issue.getLabel());
         issueResponse.setDescription(issue.getDescription());
         issueResponse.setSummer(issue.getSummer());
-        issueResponse.setAttachment(issue.getAttachment());
+        issueResponse.setAttachment(googleDriveResponse);
         issueResponse.setStartDate(issue.getStartDate());
         issueResponse.setDueDate(issue.getDueDate());
         issueResponse.setPriority(issue.getPriority().name());
@@ -264,7 +311,7 @@ public class IssueService implements IIssueService {
 
 
     @Override
-    public GetIssueResponse getIssueByTask(UUID id, UUID projectId, UUID topicId, UUID taskId) {
+    public GetIssueResponse getIssueByTask(UUID id, UUID projectId, UUID topicId, UUID taskId) throws IOException {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
 
@@ -332,12 +379,20 @@ public class IssueService implements IIssueService {
             reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
         }
 
+        Drive driveService = googleDriveService.getDriveService();
+        String fileId = googleDriveService.extractFileId(task.getAttachment());
+        com.google.api.services.drive.model.File file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+        GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+        googleDriveResponse.setFileUrl(file.getWebViewLink());
+        googleDriveResponse.setFileName(file.getName());
+        googleDriveResponse.setDownloadUrl(file.getWebContentLink());
+
         GetIssueResponse response = new GetIssueResponse();
         response.setId(issue.getId());
         response.setLabel(issue.getLabel());
         response.setSummer(issue.getSummer());
         response.setDescription(issue.getDescription());
-        response.setAttachment(issue.getAttachment());
+        response.setAttachment(googleDriveResponse);
         response.setStartDate(issue.getStartDate());
         response.setDueDate(issue.getDueDate());
         response.setPriority(issue.getPriority().toString());
@@ -350,7 +405,7 @@ public class IssueService implements IIssueService {
     }
 
     @Override
-    public GetIssueResponse updateIssue(UUID id, UUID projectId, UUID topicId, String status) {
+    public GetIssueResponse updateIssue(UUID id, UUID projectId, UUID topicId, String status) throws IOException {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
 
@@ -405,12 +460,20 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issueRepository.save(issue);
 
+        Drive driveService = googleDriveService.getDriveService();
+        String fileId = googleDriveService.extractFileId(issue.getAttachment());
+        com.google.api.services.drive.model.File file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+        GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+        googleDriveResponse.setFileUrl(file.getWebViewLink());
+        googleDriveResponse.setFileName(file.getName());
+        googleDriveResponse.setDownloadUrl(file.getWebContentLink());
+
         GetIssueResponse issueResponse = new GetIssueResponse();
         issueResponse.setId(issue.getId());
         issueResponse.setLabel(issue.getLabel());
         issueResponse.setSummer(issue.getSummer());
         issueResponse.setDescription(issue.getDescription());
-        issueResponse.setAttachment(issue.getAttachment());
+        issueResponse.setAttachment(googleDriveResponse);
         issueResponse.setStartDate(issue.getStartDate());
         issueResponse.setDueDate(issue.getDueDate());
         issueResponse.setPriority(issue.getPriority().toString());

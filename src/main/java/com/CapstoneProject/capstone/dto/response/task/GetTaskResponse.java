@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.dto.response.task;
 
+import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import lombok.AllArgsConstructor;
@@ -20,7 +21,7 @@ public class GetTaskResponse {
     private String label;
     private String summer;
     private String description;
-    private String attachment;
+    private GoogleDriveResponse attachment;
     private Date startDate;
     private Date dueDate;
     private String priority;
