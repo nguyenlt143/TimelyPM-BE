@@ -66,4 +66,10 @@ public class UrlConstant {
         public static final String GET_MEMBERS = "";
     }
 
+    public static class FILE {
+        public static final String FILE = API + "/file";
+        public static final String Add_FILE_IN_TASK = "/{id}/task";
+        public static final String Add_FILE_IN_ISSUE = "/{id}/issue";
+    }
+
 }

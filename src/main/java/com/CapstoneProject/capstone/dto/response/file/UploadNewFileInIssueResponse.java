@@ -11,8 +11,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
-public class UploadNewFileToTaskResponse {
-    private UUID taskId;
+public class UploadNewFileInIssueResponse {
+    private UUID issueId;
     private String name;
     private String url;
 }
