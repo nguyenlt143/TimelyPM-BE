@@ -8,6 +8,9 @@ public class UrlConstant {
         public static final String REGISTER = "/register";
         public static final String LOGIN = "/auth";
         public static final String GET = "";
+        public static final String GET_ALL = "/get-all";
+        public static final String GET_BY_ID = "/{id}";
+        public static final String DELETE = "/{id}";
     }
 
     public static class PROJECT {

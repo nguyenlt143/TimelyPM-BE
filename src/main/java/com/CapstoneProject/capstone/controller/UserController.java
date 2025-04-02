@@ -12,9 +12,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(UrlConstant.USER.USER)
@@ -37,5 +41,24 @@ public class UserController {
     public ResponseEntity<BaseResponse<GetUserResponse>> getUser() {
         GetUserResponse data = userService.getUser();
         return ResponseEntity.ok(new BaseResponse<>("200", "Hồ sơ người dùng", data));
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping(UrlConstant.USER.GET_ALL)
+    public ResponseEntity<BaseResponse<List<GetUserResponse>>> getAllUser() {
+        List<GetUserResponse> data = userService.getUsers();
+        return ResponseEntity.ok(new BaseResponse<>("200", "Danh sách người dùng", data));
+    }
+
+    @GetMapping(UrlConstant.USER.GET_BY_ID)
+    public ResponseEntity<BaseResponse<GetUserResponse>> getUserById(@PathVariable UUID id) {
+        GetUserResponse data = userService.getUser(id);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Hồ sơ người dùng", data));
+    }
+
+    @DeleteMapping(UrlConstant.USER.DELETE)
+    public ResponseEntity<BaseResponse<Boolean>> getUser(@PathVariable UUID id) {
+        boolean data = userService.deleteUser(id);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Xóa người dùng thành công", data));
     }
 }

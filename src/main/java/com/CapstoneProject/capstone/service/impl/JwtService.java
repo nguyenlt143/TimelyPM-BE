@@ -35,7 +35,7 @@ public class JwtService {
         Map<String, Object> extraClaims = new HashMap<>();
         if (userDetails instanceof User user) {
             extraClaims.put("username", user.getUsername());
-            extraClaims.put("roles", user.getRole().getName().name());
+            extraClaims.put("role", user.getRole().getName().name());
             extraClaims.put("fullName", user.getUsername());
             extraClaims.put("email", user.getEmail());
         }
@@ -69,7 +69,7 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    private Claims extractAllClaims(String token){
+    public Claims extractAllClaims(String token){
         return Jwts
                 .parserBuilder()
                 .setSigningKey(getSignInKey())

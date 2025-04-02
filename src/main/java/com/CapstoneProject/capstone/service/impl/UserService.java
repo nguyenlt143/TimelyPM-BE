@@ -29,7 +29,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -107,5 +110,35 @@ public class UserService implements IUserService {
         GetUserResponse response = userMapper.getUserResponse(user);
         response.setProfile(userProfileMapper.toProfile(userProfile));
         return response;
+    }
+
+    @Override
+    public GetUserResponse getUser(UUID id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found!"));
+        UserProfile userProfile = userProfileRepository.findByUserId(id).orElseThrow(() -> new NotFoundException("Profile not found!"));
+        GetUserResponse response = userMapper.getUserResponse(user);
+        response.setProfile(userProfileMapper.toProfile(userProfile));
+        return response;
+    }
+
+    @Override
+    public Boolean deleteUser(UUID id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found!"));
+        user.setActive(false);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    public List<GetUserResponse> getUsers() {
+        List<User> users = userRepository.findAll();
+        List<GetUserResponse> userResponses = users.stream().map(user -> {
+            UserProfile userProfile = userProfileRepository.findByUserId(user.getId()).orElseThrow(() -> new NotFoundException("Profile not found!"));
+            GetUserResponse response = userMapper.getUserResponse(user);
+            response.setProfile(userProfileMapper.toProfile(userProfile));
+            return response;
+        }).collect(Collectors.toList());
+        return userResponses;
     }
 }
