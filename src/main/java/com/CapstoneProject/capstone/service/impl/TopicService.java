@@ -6,10 +6,12 @@ import com.CapstoneProject.capstone.dto.response.topic.CreateNewTopicResponse;
 import com.CapstoneProject.capstone.dto.response.topic.GetTopicResponse;
 import com.CapstoneProject.capstone.dto.response.topic.UpdateTopicResponse;
 import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
+import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.CapstoneProject.capstone.enums.TopicTypeEnum;
 import com.CapstoneProject.capstone.exception.ForbiddenException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
+import com.CapstoneProject.capstone.exception.ProjectAlreadyCompletedException;
 import com.CapstoneProject.capstone.mapper.TopicMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
@@ -34,7 +36,10 @@ public class TopicService implements ITopicService {
     @Override
     public CreateNewTopicResponse createNewTopic(CreateNewTopicRequest request) {
         Project project = projectRepository.findById(request.getProjectId()).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
-
+        if (project.getStatus().equals(StatusEnum.DONE.name())){
+            throw new ProjectAlreadyCompletedException("Không thể thêm task mới vì dự án đã kết thúc.");
+        }
+        
         UUID userId = AuthenUtil.getCurrentUserId();
 
         User pmUser = userRepository.findUserWithRolePMByProjectId(request.getProjectId()).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));

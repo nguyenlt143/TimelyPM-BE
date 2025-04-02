@@ -10,10 +10,7 @@ import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
 import com.CapstoneProject.capstone.enums.SeverityEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
-import com.CapstoneProject.capstone.exception.ForbiddenException;
-import com.CapstoneProject.capstone.exception.InvalidEnumException;
-import com.CapstoneProject.capstone.exception.InvalidProjectException;
-import com.CapstoneProject.capstone.exception.NotFoundException;
+import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
@@ -67,12 +64,17 @@ public class IssueService implements IIssueService {
         }
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+        if (project.getStatus().equals(StatusEnum.DONE.name())){
+            throw new ProjectAlreadyCompletedException("Không thể thêm task mới vì dự án đã kết thúc.");
+        }
+
         UUID userId = AuthenUtil.getCurrentUserId();
 
-        User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Không tìm thấy Project Manager"));
-        if(!pmUser.getId().equals(userId)){
-            throw new ForbiddenException("Bạn không có quyền");
-        }
+        List<User> pmUsers = userRepository.findUsersWithRolePMOrQAByProjectId(projectId);
+        User currentPM = pmUsers.stream()
+                .filter(pm -> pm.getId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new ForbiddenException("Bạn không có quyền"));
 
         Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
 
@@ -99,7 +101,7 @@ public class IssueService implements IIssueService {
 
         ProjectMember assignee = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         ProjectMember reporter = projectMemberRepository.findById(request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
-        ProjectMember pmMember = projectMemberRepository.findByProjectIdAndUserId(projectId, pmUser.getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
+        ProjectMember pmMember = projectMemberRepository.findByProjectIdAndUserId(projectId, currentPM.getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
 
         Issue issue = new Issue();
         issue.setLabel(issueLabel);

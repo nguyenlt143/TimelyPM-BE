@@ -8,10 +8,7 @@ import com.CapstoneProject.capstone.dto.response.question.GetQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
-import com.CapstoneProject.capstone.exception.ForbiddenException;
-import com.CapstoneProject.capstone.exception.InvalidEnumException;
-import com.CapstoneProject.capstone.exception.InvalidProjectException;
-import com.CapstoneProject.capstone.exception.NotFoundException;
+import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
@@ -49,6 +46,10 @@ public class QuestionService implements IQuestionService {
         }
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+        if (project.getStatus().equals(StatusEnum.DONE.name())){
+            throw new ProjectAlreadyCompletedException("Không thể thêm task mới vì dự án đã kết thúc.");
+        }
+
         UUID userId = AuthenUtil.getCurrentUserId();
 
         ProjectMember pmUser = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));

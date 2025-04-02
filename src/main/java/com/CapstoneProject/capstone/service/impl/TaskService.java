@@ -62,6 +62,9 @@ public class TaskService implements ITaskService {
         }
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+        if (project.getStatus().equals(StatusEnum.DONE.name())){
+            throw new ProjectAlreadyCompletedException("Không thể thêm task mới vì dự án đã kết thúc.");
+        }
         UUID userId = AuthenUtil.getCurrentUserId();
 
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Không tìm thấy Project Manager"));

@@ -9,10 +9,7 @@ import com.CapstoneProject.capstone.enums.GenderEnum;
 import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
 import com.CapstoneProject.capstone.enums.RoleEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
-import com.CapstoneProject.capstone.exception.ForbiddenException;
-import com.CapstoneProject.capstone.exception.InvalidEnumException;
-import com.CapstoneProject.capstone.exception.NotFoundException;
-import com.CapstoneProject.capstone.exception.UserExisted;
+import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.ProjectMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
@@ -131,6 +128,9 @@ public class ProjectService implements IProjectService {
         UUID userId = AuthenUtil.getCurrentUserId();
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
+        if (project.getStatus().equals(StatusEnum.DONE.name())){
+            throw new ProjectAlreadyCompletedException("Không thể thêm task mới vì dự án đã kết thúc.");
+        }
 
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
         if(!pmUser.getId().equals(userId)){
