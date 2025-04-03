@@ -44,6 +44,7 @@ public class IssueService implements IIssueService {
     private final TaskRepository taskRepository;
     private final UserProfileRepository userProfileRepository;
     private final GoogleDriveService googleDriveService;
+    private final FileRepository fileRepository;
 
     @Override
     public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request, MultipartFile file) throws IOException {
@@ -201,6 +202,27 @@ public class IssueService implements IIssueService {
             googleDriveResponse.setFileName(file.getName());
             googleDriveResponse.setDownloadUrl(file.getWebContentLink());
 
+            List<GoogleDriveResponse> googleDriveResponses = new ArrayList<>();
+            List<File> files = fileRepository.findByTaskId(issue.getId());
+            for (File fileIssue : files) {
+                String fileIssueId = googleDriveService.extractFileId(fileIssue.getUrl());
+                try {
+                    com.google.api.services.drive.model.File driveFile = driveService.files()
+                            .get(fileIssueId)
+                            .setFields("name, webViewLink, webContentLink")
+                            .execute();
+
+                    GoogleDriveResponse fileResponse = new GoogleDriveResponse();
+                    fileResponse.setFileName(driveFile.getName());
+                    fileResponse.setFileUrl(driveFile.getWebViewLink());
+                    fileResponse.setDownloadUrl(driveFile.getWebContentLink());
+
+                    googleDriveResponses.add(fileResponse);
+                } catch (IOException e) {
+                    throw new RuntimeException("Lỗi khi lấy thông tin file từ Google Drive", e);
+                }
+            }
+
             GetIssueResponse issueResponse = new GetIssueResponse();
             issueResponse.setId(issue.getId());
             issueResponse.setLabel(issue.getLabel());
@@ -215,6 +237,7 @@ public class IssueService implements IIssueService {
             issueResponse.setUser(userResponse);
             issueResponse.setAssignee(userAssigneeResponse);
             issueResponse.setReporter(userReporterResponse);
+            issueResponse.setFileResponses(googleDriveResponses);
             return issueResponse;
         }).collect(Collectors.toList());
         return responses;
@@ -293,6 +316,27 @@ public class IssueService implements IIssueService {
         googleDriveResponse.setFileName(file.getName());
         googleDriveResponse.setDownloadUrl(file.getWebContentLink());
 
+        List<GoogleDriveResponse> googleDriveResponses = new ArrayList<>();
+        List<File> files = fileRepository.findByTaskId(issue.getId());
+        for (File fileIssue : files) {
+            String fileIssueId = googleDriveService.extractFileId(fileIssue.getUrl());
+            try {
+                com.google.api.services.drive.model.File driveFile = driveService.files()
+                        .get(fileIssueId)
+                        .setFields("name, webViewLink, webContentLink")
+                        .execute();
+
+                GoogleDriveResponse fileResponse = new GoogleDriveResponse();
+                fileResponse.setFileName(driveFile.getName());
+                fileResponse.setFileUrl(driveFile.getWebViewLink());
+                fileResponse.setDownloadUrl(driveFile.getWebContentLink());
+
+                googleDriveResponses.add(fileResponse);
+            } catch (IOException e) {
+                throw new RuntimeException("Lỗi khi lấy thông tin file từ Google Drive", e);
+            }
+        }
+
         GetIssueResponse issueResponse = new GetIssueResponse();
         issueResponse.setId(issue.getId());
         issueResponse.setLabel(issue.getLabel());
@@ -307,6 +351,7 @@ public class IssueService implements IIssueService {
         issueResponse.setUser(creatorResponse);
         issueResponse.setAssignee(assigneeResponse);
         issueResponse.setReporter(reporterResponse);
+        issueResponse.setFileResponses(googleDriveResponses);
 
         return issueResponse;
     }

@@ -41,4 +41,7 @@ public class ProjectMember extends BaseEntity{
 
     @OneToMany(mappedBy = "assignee")
     private List<Question> questions;
+
+    @OneToMany(mappedBy = "projectMember")
+    private List<File> files;
 }

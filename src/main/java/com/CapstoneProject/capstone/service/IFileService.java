@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 public interface IFileService {
-    UploadNewFileInTaskResponse uploadNewFileInTask(UUID taskId, MultipartFile file) throws IOException;
-    UploadNewFileInIssueResponse uploadNewFileInIssue(UUID issueId, MultipartFile file) throws IOException;
+    UploadNewFileInTaskResponse uploadNewFileInTask(UUID taskId, UUID projectId, MultipartFile file) throws IOException;
+    UploadNewFileInIssueResponse uploadNewFileInIssue(UUID issueId, UUID projectId, MultipartFile file) throws IOException;
 
 }

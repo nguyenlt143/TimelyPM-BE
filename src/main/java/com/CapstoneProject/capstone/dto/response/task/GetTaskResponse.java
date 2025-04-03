@@ -29,5 +29,6 @@ public class GetTaskResponse {
     private GetUserResponse user;
     private GetUserResponse assignee;
     private GetUserResponse reporter;
+    private List<GoogleDriveResponse> fileResponse;
     private List<GetIssueResponse> issues;
 }

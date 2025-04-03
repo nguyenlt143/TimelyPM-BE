@@ -21,14 +21,14 @@ public class FileController {
     private final IFileService fileService;
 
     @PostMapping(value = UrlConstant.FILE.Add_FILE_IN_TASK, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse<UploadNewFileInTaskResponse>> uploadNewFileInTask(@PathVariable UUID id, @RequestParam MultipartFile file) throws IOException {
-        UploadNewFileInTaskResponse response = fileService.uploadNewFileInTask(id, file);
+    public ResponseEntity<BaseResponse<UploadNewFileInTaskResponse>> uploadNewFileInTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam MultipartFile file) throws IOException {
+        UploadNewFileInTaskResponse response = fileService.uploadNewFileInTask(id, projectId, file);
         return ResponseEntity.ok(new BaseResponse<>("200", "Upload file thành công", response));
     }
 
     @PostMapping(value = UrlConstant.FILE.Add_FILE_IN_ISSUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse<UploadNewFileInIssueResponse>> uploadNewFileInIssue(@PathVariable UUID id, @RequestParam MultipartFile file) throws IOException {
-        UploadNewFileInIssueResponse response = fileService.uploadNewFileInIssue(id, file);
+    public ResponseEntity<BaseResponse<UploadNewFileInIssueResponse>> uploadNewFileInIssue(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam MultipartFile file) throws IOException {
+        UploadNewFileInIssueResponse response = fileService.uploadNewFileInIssue(id, projectId,file);
         return ResponseEntity.ok(new BaseResponse<>("200", "Upload file thành công", response));
     }
 }

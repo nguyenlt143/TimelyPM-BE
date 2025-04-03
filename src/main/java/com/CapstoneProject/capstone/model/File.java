@@ -31,4 +31,9 @@ public class File extends BaseEntity{
     @JoinColumn(name = "question_id")
     @JsonIgnore
     private Question question;
+
+    @ManyToOne
+    @JoinColumn(name = "project_member_id")
+    @JsonIgnore
+    private ProjectMember projectMember;
 }

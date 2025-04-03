@@ -28,10 +28,7 @@ import javax.imageio.plugins.bmp.BMPImageWriteParam;
 import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +47,7 @@ public class TaskService implements ITaskService {
     private final RoleRepository roleRepository;
     private final IssueRepository issueRepository;
     private final GoogleDriveService googleDriveService;
+    private final FileRepository fileRepository;
 
     @Override
     public CreateNewTaskResponse createNewTask(UUID projectId, UUID topicId, CreateNewTaskRequest request, MultipartFile file) throws IOException {
@@ -232,12 +230,35 @@ public class TaskService implements ITaskService {
             googleDriveResponse.setFileUrl(file.getWebViewLink());
             googleDriveResponse.setFileName(file.getName());
             googleDriveResponse.setDownloadUrl(file.getWebContentLink());
+
+            List<GoogleDriveResponse> googleDriveResponses = new ArrayList<>();
+            List<File> files = fileRepository.findByTaskId(task.getId());
+            for (File fileTask : files) {
+                String fileTaskId = googleDriveService.extractFileId(fileTask.getUrl());
+                try {
+                    com.google.api.services.drive.model.File driveFile = driveService.files()
+                            .get(fileTaskId)
+                            .setFields("name, webViewLink, webContentLink")
+                            .execute();
+
+                    GoogleDriveResponse fileResponse = new GoogleDriveResponse();
+                    fileResponse.setFileName(driveFile.getName());
+                    fileResponse.setFileUrl(driveFile.getWebViewLink());
+                    fileResponse.setDownloadUrl(driveFile.getWebContentLink());
+
+                    googleDriveResponses.add(fileResponse);
+                } catch (IOException e) {
+                    throw new RuntimeException("Lỗi khi lấy thông tin file từ Google Drive", e);
+                }
+            }
+
             GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
             taskResponse.setUser(userResponse);
             taskResponse.setAttachment(googleDriveResponse);
             taskResponse.setAssignee(userAssigneeResponse);
             taskResponse.setReporter(userReporterResponse);
             taskResponse.setIssues(issueResponses);
+            taskResponse.setFileResponse(googleDriveResponses);
             return taskResponse;
         }).collect(Collectors.toList());
         return responses;
@@ -305,6 +326,7 @@ public class TaskService implements ITaskService {
 
             reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
         }
+
         Drive driveService = googleDriveService.getDriveService();
         String fileId = googleDriveService.extractFileId(task.getAttachment());
         com.google.api.services.drive.model.File file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
@@ -312,6 +334,7 @@ public class TaskService implements ITaskService {
         googleDriveResponse.setFileUrl(file.getWebViewLink());
         googleDriveResponse.setFileName(file.getName());
         googleDriveResponse.setDownloadUrl(file.getWebContentLink());
+
         List<Issue> issues = issueRepository.findAllByTaskId(task.getId());
         List<GetIssueResponse> issueResponses = new ArrayList<>();
         for (Issue issue : issues) {
@@ -352,11 +375,33 @@ public class TaskService implements ITaskService {
             issueResponse.setUser(createdByResponse);
             issueResponses.add(issueResponse);
         }
+
+        List<GoogleDriveResponse> googleDriveResponses = new ArrayList<>();
+        List<File> files = fileRepository.findByTaskId(task.getId());
+        for (File fileTask : files) {
+            String fileTaskId = googleDriveService.extractFileId(fileTask.getUrl());
+            try {
+                com.google.api.services.drive.model.File driveFile = driveService.files()
+                        .get(fileTaskId)
+                        .setFields("name, webViewLink, webContentLink")
+                        .execute();
+
+                GoogleDriveResponse fileResponse = new GoogleDriveResponse();
+                fileResponse.setFileName(driveFile.getName());
+                fileResponse.setFileUrl(driveFile.getWebViewLink());
+                fileResponse.setDownloadUrl(driveFile.getWebContentLink());
+
+                googleDriveResponses.add(fileResponse);
+            } catch (IOException e) {
+                throw new RuntimeException("Lỗi khi lấy thông tin file từ Google Drive", e);
+            }
+        }
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
         taskResponse.setAttachment(googleDriveResponse);
         taskResponse.setUser(creatorResponse);
         taskResponse.setAssignee(assigneeResponse);
         taskResponse.setReporter(reporterResponse);
+        taskResponse.setFileResponse(googleDriveResponses);
 
         return taskResponse;
     }
