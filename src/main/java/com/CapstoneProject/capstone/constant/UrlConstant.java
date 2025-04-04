@@ -49,6 +49,7 @@ public class UrlConstant {
         public static final String ISSUE = API + "/issue";
         public static final String CREATE = "/create";
         public static final String GET_ISSUES = "";
+        public static final String GET_ISSUE = "/{id}";
         public static final String GET_ISSUE_BY_TASK = "/{id}/task";
         public static final String UPDATE_ISSUE = "/{id}";
         public static final String DELETE_ISSUE = "/{id}";
@@ -70,6 +71,11 @@ public class UrlConstant {
         public static final String FILE = API + "/file";
         public static final String Add_FILE_IN_TASK = "/{id}/task";
         public static final String Add_FILE_IN_ISSUE = "/{id}/issue";
+    }
+
+    public static class ADMIN{
+        public static final String ADMIN = API + "/admin";
+        public static final String GET_PROJECTS = "/project";
     }
 
 }

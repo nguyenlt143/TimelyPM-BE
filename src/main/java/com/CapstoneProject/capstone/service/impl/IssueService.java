@@ -110,7 +110,7 @@ public class IssueService implements IIssueService {
         issue.setDescription(request.getDescription());
         issue.setAttachment(url.getFileUrl());
         issue.setAssignee(assignee);
-        issue.setCreatedBy(reporter);
+        issue.setReporter(reporter);
         issue.setCreatedBy(pmMember);
         issue.setStartDate(request.getStartDate());
         issue.setDueDate(request.getDueDate());

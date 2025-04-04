@@ -37,6 +37,12 @@ public class IssueController {
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách issue thành công", response));
     }
 
+    @GetMapping(UrlConstant.ISSUE.GET_ISSUE)
+    public ResponseEntity<BaseResponse<GetIssueResponse>> GetIssue(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId) throws IOException {
+        GetIssueResponse response = issueService.getIssue(id, projectId, topicId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Lấy issue thành công", response));
+    }
+
     @GetMapping(UrlConstant.ISSUE.GET_ISSUE_BY_TASK)
     public ResponseEntity<BaseResponse<GetIssueResponse>> getIssueByTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam UUID taskId) throws IOException {
         GetIssueResponse response = issueService.getIssueByTask(id, projectId, topicId,taskId);

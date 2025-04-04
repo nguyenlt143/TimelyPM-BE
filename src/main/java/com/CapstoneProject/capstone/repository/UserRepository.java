@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
+    @Query(value = "SELECT * FROM user WHERE active = true", nativeQuery = true)
+    List<User> findAll();
     Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);
     @Query(value = """
