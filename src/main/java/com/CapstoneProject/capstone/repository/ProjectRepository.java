@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.repository;
 
+import ch.qos.logback.core.status.Status;
 import com.CapstoneProject.capstone.model.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,5 +24,9 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     """, nativeQuery = true)
     List<Project> findByUser(@Param("userId") UUID userId);
 
+    @Query(value = "SELECT * FROM project WHERE active = true AND code = :code", nativeQuery = true)
+    Optional<Project> findByCode(@Param("code") String code);
 
+    @Query(value = "SELECT COUNT(*) FROM Project WHERE status = :status AND active = true", nativeQuery = true)
+    int countByStatus(@Param("status") String status);
 }

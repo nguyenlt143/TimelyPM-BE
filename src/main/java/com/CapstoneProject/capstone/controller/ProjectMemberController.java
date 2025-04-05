@@ -6,6 +6,7 @@ import com.CapstoneProject.capstone.dto.response.projectMember.GetProjectMemberR
 import com.CapstoneProject.capstone.service.IProjectMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class ProjectMemberController {
     private final IProjectMemberService projectMemberService;
 
+    @PreAuthorize("hasAuthority('USER')")
     @GetMapping(UrlConstant.MEMBER.GET_MEMBERS)
     public ResponseEntity<BaseResponse<List<GetProjectMemberResponse>>> getProjectMembers(UUID projectId) {
         List<GetProjectMemberResponse> projectMemberResponses = projectMemberService.getProjectMembers(projectId);

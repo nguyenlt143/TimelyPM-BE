@@ -20,4 +20,5 @@ public interface IProjectService {
     boolean deleteUserFromProject(UUID projectId, UUID id);
     List<GetProjectResponse> getProjectByUser();
     boolean closeProject(UUID id);
+    boolean joinProject(String code);
 }

@@ -11,6 +11,7 @@ import com.CapstoneProject.capstone.service.ITopicService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,32 +22,42 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TopicController {
     private final ITopicService topicService;
+
+    @PreAuthorize("hasAuthority('USER')")
     @PostMapping(UrlConstant.TOPIC.CREATE)
     public ResponseEntity<BaseResponse<CreateNewTopicResponse>> create(@Valid @RequestBody CreateNewTopicRequest request) {
         CreateNewTopicResponse response = topicService.createNewTopic(request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Tạo topic thành công", response));
     }
 
+    @PreAuthorize("hasAuthority('USER')")
     @GetMapping(UrlConstant.TOPIC.GET_TOPICS)
     public ResponseEntity<BaseResponse<List<GetTopicResponse>>> getAll(@RequestParam UUID projectId) {
         List<GetTopicResponse> response = topicService.getTopics(projectId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Danh sách topic", response));
     }
 
+    @PreAuthorize("hasAuthority('USER')")
     @GetMapping(UrlConstant.TOPIC.GET_TOPIC)
-    public ResponseEntity<BaseResponse<GetTopicResponse>> getAll(@PathVariable UUID id, @RequestParam UUID projectId) {
+    public ResponseEntity<BaseResponse<GetTopicResponse>> getAll(@PathVariable UUID id,
+                                                                 @RequestParam UUID projectId) {
         GetTopicResponse response = topicService.getTopic(id, projectId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Module bạn chọn", response));
     }
 
+    @PreAuthorize("hasAuthority('USER')")
     @PutMapping(UrlConstant.TOPIC.UPDATE_TOPIC)
-    public ResponseEntity<BaseResponse<UpdateTopicResponse>> updateTopic(@PathVariable UUID id, @RequestParam UUID projectId, @RequestBody UpdateTopicRequest request) {
+    public ResponseEntity<BaseResponse<UpdateTopicResponse>> updateTopic(@PathVariable UUID id,
+                                                                         @RequestParam UUID projectId,
+                                                                         @RequestBody UpdateTopicRequest request) {
         UpdateTopicResponse response = topicService.updateTopic(id, projectId, request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Update thành công", response));
     }
 
+    @PreAuthorize("hasAuthority('USER')")
     @DeleteMapping(UrlConstant.TOPIC.DELETE_TOPIC)
-    public ResponseEntity<BaseResponse<Boolean>> deleteTopic(@PathVariable UUID id, @RequestParam UUID projectId) {
+    public ResponseEntity<BaseResponse<Boolean>> deleteTopic(@PathVariable UUID id,
+                                                             @RequestParam UUID projectId) {
         boolean response = topicService.deleteTopic(id, projectId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Module bạn chọn", response));
     }

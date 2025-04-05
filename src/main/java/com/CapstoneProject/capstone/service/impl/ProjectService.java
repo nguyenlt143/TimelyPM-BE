@@ -202,5 +202,22 @@ public class ProjectService implements IProjectService {
         return true;
     }
 
+    @Override
+    public boolean joinProject(String code) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        Project project = projectRepository.findByCode(code).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+
+        ProjectMember projectMember = new ProjectMember();
+        projectMember.setProject(project);
+        projectMember.setUser(user);
+        projectMember.setCreatedAt(LocalDateTime.now());
+        projectMember.setUpdatedAt(LocalDateTime.now());
+        projectMemberRepository.save(projectMember);
+
+        return true;
+    }
+
 
 }

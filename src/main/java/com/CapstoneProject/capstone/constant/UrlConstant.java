@@ -24,6 +24,7 @@ public class UrlConstant {
         public static final String INVITE_PROJECT = "/{id}/invite";
         public static final String DELETE_MEMBER = "/{id}/delete/member";
         public static final String CLOSE_PROJECT = "/{id}/close";
+        public static final String JOIN_PROJECT = "/join";
     }
 
     public static class TOPIC {
@@ -77,6 +78,7 @@ public class UrlConstant {
     public static class ADMIN{
         public static final String ADMIN = API + "/admin";
         public static final String GET_PROJECTS = "/project";
+        public static final String DASHBOARD = "/dashboard";
     }
 
 }

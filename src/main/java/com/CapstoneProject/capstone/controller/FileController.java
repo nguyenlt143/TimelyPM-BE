@@ -8,6 +8,7 @@ import com.CapstoneProject.capstone.service.IFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,14 +21,20 @@ import java.util.UUID;
 public class FileController {
     private final IFileService fileService;
 
+    @PreAuthorize("hasAuthority('USER')")
     @PostMapping(value = UrlConstant.FILE.Add_FILE_IN_TASK, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse<UploadNewFileInTaskResponse>> uploadNewFileInTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam MultipartFile file) throws IOException {
+    public ResponseEntity<BaseResponse<UploadNewFileInTaskResponse>> uploadNewFileInTask(@PathVariable UUID id,
+                                                                                         @RequestParam UUID projectId,
+                                                                                         @RequestParam MultipartFile file) throws IOException {
         UploadNewFileInTaskResponse response = fileService.uploadNewFileInTask(id, projectId, file);
         return ResponseEntity.ok(new BaseResponse<>("200", "Upload file thành công", response));
     }
 
+    @PreAuthorize("hasAuthority('USER')")
     @PostMapping(value = UrlConstant.FILE.Add_FILE_IN_ISSUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse<UploadNewFileInIssueResponse>> uploadNewFileInIssue(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam MultipartFile file) throws IOException {
+    public ResponseEntity<BaseResponse<UploadNewFileInIssueResponse>> uploadNewFileInIssue(@PathVariable UUID id,
+                                                                                           @RequestParam UUID projectId,
+                                                                                           @RequestParam MultipartFile file) throws IOException {
         UploadNewFileInIssueResponse response = fileService.uploadNewFileInIssue(id, projectId,file);
         return ResponseEntity.ok(new BaseResponse<>("200", "Upload file thành công", response));
     }
