@@ -7,6 +7,7 @@ import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.service.IProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +21,8 @@ import java.util.UUID;
 @RequestMapping(UrlConstant.ADMIN.ADMIN)
 public class AdminController {
     private final IProjectService projectService;
+
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping(UrlConstant.ADMIN.GET_PROJECTS)
     public ResponseEntity<BaseResponse<List<GetProjectResponse>>> getAllProject() {
         List<GetProjectResponse> response = projectService.getAllProjects();

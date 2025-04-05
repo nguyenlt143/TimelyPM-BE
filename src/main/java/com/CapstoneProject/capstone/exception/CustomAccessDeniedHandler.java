@@ -16,6 +16,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
 
         BaseResponse<?> baseResponse = new BaseResponse<>("403", "Bạn không có quyền", null);

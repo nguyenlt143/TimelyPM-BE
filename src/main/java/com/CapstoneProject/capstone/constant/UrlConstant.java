@@ -43,6 +43,7 @@ public class UrlConstant {
         public static final String UPDATE_TASKS = "/{id}";
         public static final String DELETE_TASKS = "/{id}";
         public static final String CREATE_ISSUE_BY_TASK = "/{id}/issue";
+        public static final String UPDATE_TASK = "/{id}/update";
     }
 
     public static class ISSUE {

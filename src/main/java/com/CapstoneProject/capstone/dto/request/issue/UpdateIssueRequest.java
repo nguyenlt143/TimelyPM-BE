@@ -11,8 +11,7 @@ import java.sql.Date;
 @AllArgsConstructor
 @Getter
 @Setter
-public class CreateNewIssueByTaskRequest {
-    private String label;
+public class UpdateIssueRequest {
     private String summer;
     private String description;
     private Date startDate;

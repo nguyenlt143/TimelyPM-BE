@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueRequest;
+import com.CapstoneProject.capstone.dto.request.issue.UpdateIssueRequest;
 import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
@@ -568,5 +569,60 @@ public class IssueService implements IIssueService {
         return true;
     }
 
+    @Override
+    public GetIssueResponse UpdateIssue(UUID id, UUID projectId, UUID topicId, UpdateIssueRequest request) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này"));
+        User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Không tìm thấy Project Manager"));
+        if(!pmUser.getId().equals(userId)){
+            throw new ForbiddenException("Bạn không có quyền");
+        }
 
+        Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+        if(!topic.getProject().getId().equals(project.getId())){
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Issue issue = issueRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy issue trong module này"));
+
+        PriorityEnum priority = null;
+        if (request.getPriority() != null){
+            String prioritySt = request.getPriority();
+            try{
+                priority = PriorityEnum.valueOf(prioritySt.toUpperCase());
+            }catch (IllegalArgumentException | NullPointerException e){
+                throw new InvalidEnumException("Trạng thái không hợp lệ");
+            }
+        }
+
+        SeverityEnum severity = null;
+        if (request.getSeverity() != null){
+            String severitySt = request.getSeverity();
+            try{
+                severity = SeverityEnum.valueOf(severitySt.toUpperCase());
+            }catch (IllegalArgumentException | NullPointerException e){
+                throw new InvalidEnumException("Trạng thái không hợp lệ");
+            }
+        }
+
+        issue.setSummer(request.getSummer() == null ? issue.getSummer() : request.getSummer());
+        issue.setDescription(request.getDescription() == null ? issue.getDescription() : request.getDescription());
+        issue.setStartDate(request.getStartDate() == null ? issue.getStartDate() : request.getStartDate());
+        issue.setDueDate(request.getDueDate() == null ? issue.getDueDate() : request.getDueDate());
+        issue.setPriority(request.getPriority() == null ? issue.getPriority() : priority);
+        issue.setSeverity(request.getSeverity() == null ? issue.getSeverity() : severity);
+        issue.setUpdatedAt(LocalDateTime.now());
+
+        GetIssueResponse issueResponse = new GetIssueResponse();
+        issueResponse.setId(issue.getId());
+        issueResponse.setSummer(issue.getSummer());
+        issueResponse.setDescription(issue.getDescription());
+        issueResponse.setStartDate(issue.getStartDate());
+        issueResponse.setDueDate(issue.getDueDate());
+        issueResponse.setPriority(issue.getPriority().toString());
+        issueResponse.setSeverity(issue.getSeverity().toString());
+        issueResponse.setStatus(issue.getStatus().toString());
+
+        return issueResponse;
+    }
 }

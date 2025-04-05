@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.service;
 
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueRequest;
+import com.CapstoneProject.capstone.dto.request.issue.UpdateIssueRequest;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
@@ -17,4 +18,5 @@ public interface IIssueService {
     GetIssueResponse getIssueByTask(UUID id, UUID projectId, UUID topicId, UUID taskId) throws IOException;
     GetIssueResponse updateIssue(UUID id, UUID projectId, UUID topicId, String status) throws IOException;
     Boolean deleteIssue(UUID id, UUID projectId, UUID topicId);
+    GetIssueResponse UpdateIssue(UUID id, UUID projectId, UUID topicId, UpdateIssueRequest request);
 }

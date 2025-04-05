@@ -3,6 +3,7 @@ package com.CapstoneProject.capstone.controller;
 import com.CapstoneProject.capstone.constant.UrlConstant;
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueByTaskRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
+import com.CapstoneProject.capstone.dto.request.task.UpdateTaskRequest;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.CreateNewTaskResponse;
@@ -32,8 +33,8 @@ public class TaskController {
     }
 
     @PostMapping(UrlConstant.TASK.CREATE_ISSUE_BY_TASK)
-    public ResponseEntity<BaseResponse<CreateNewIssueByTaskResponse>> create(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @Valid @RequestBody CreateNewIssueByTaskRequest request) {
-        CreateNewIssueByTaskResponse response = taskService.createNewIssueByTask(id, projectId, topicId, request);
+    public ResponseEntity<BaseResponse<CreateNewIssueByTaskResponse>> create(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @Valid @ModelAttribute CreateNewIssueByTaskRequest request, @RequestParam MultipartFile file) throws IOException {
+        CreateNewIssueByTaskResponse response = taskService.createNewIssueByTask(id, projectId, topicId, request, file);
         return ResponseEntity.ok(new BaseResponse<>("200", "Tạo issue thành công", response));
     }
 
@@ -50,8 +51,14 @@ public class TaskController {
     }
 
     @PutMapping(UrlConstant.TASK.UPDATE_TASKS)
-    public ResponseEntity<BaseResponse<GetTaskResponse>> UpdateTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam String status) {
+    public ResponseEntity<BaseResponse<GetTaskResponse>> UpdateStatusTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam String status) {
         GetTaskResponse response = taskService.updateTask(id, projectId, topicId, status);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Update task thành công", response));
+    }
+
+    @PutMapping(UrlConstant.TASK.UPDATE_TASK)
+    public ResponseEntity<BaseResponse<GetTaskResponse>> UpdateTask(@PathVariable UUID id, @RequestParam UUID projectId, @RequestParam UUID topicId, @RequestParam UpdateTaskRequest request) {
+        GetTaskResponse response = taskService.updateTask(id, projectId, topicId, request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Update task thành công", response));
     }
 

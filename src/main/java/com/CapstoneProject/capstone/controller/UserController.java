@@ -51,12 +51,14 @@ public class UserController {
         return ResponseEntity.ok(new BaseResponse<>("200", "Danh sách người dùng", data));
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping(UrlConstant.USER.GET_BY_ID)
     public ResponseEntity<BaseResponse<GetUserResponse>> getUserById(@PathVariable UUID id) {
         GetUserResponse data = userService.getUser(id);
         return ResponseEntity.ok(new BaseResponse<>("200", "Hồ sơ người dùng", data));
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping(UrlConstant.USER.DELETE)
     public ResponseEntity<BaseResponse<Boolean>> getUser(@PathVariable UUID id) {
         boolean data = userService.deleteUser(id);

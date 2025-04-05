@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueByTaskRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
+import com.CapstoneProject.capstone.dto.request.task.UpdateTaskRequest;
 import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
@@ -500,7 +501,7 @@ public class TaskService implements ITaskService {
     }
 
     @Override
-    public CreateNewIssueByTaskResponse createNewIssueByTask(UUID id, UUID projectId, UUID topicId, CreateNewIssueByTaskRequest request) {
+    public CreateNewIssueByTaskResponse createNewIssueByTask(UUID id, UUID projectId, UUID topicId, CreateNewIssueByTaskRequest request, MultipartFile file) throws IOException {
         String priorityStr = request.getPriority();
         PriorityEnum priority;
         try {
@@ -544,11 +545,13 @@ public class TaskService implements ITaskService {
             throw new ForbiddenException("Bạn không có quyền tạo issue trong task đã chỉ định");
         }
 
+        GoogleDriveResponse url = googleDriveService.uploadFileToDrive(file);
+
         Issue issue = new Issue();
         issue.setLabel(request.getLabel());
         issue.setSummer(request.getSummer());
         issue.setDescription(request.getDescription());
-        issue.setAttachment(request.getAttachment());
+        issue.setAttachment(url.getFileUrl());
         issue.setStartDate(request.getStartDate());
         issue.setDueDate(request.getDueDate());
         issue.setStatus(StatusEnum.PENDING);
@@ -593,6 +596,8 @@ public class TaskService implements ITaskService {
         response.setDescription(issue.getDescription());
         response.setAttachment(issue.getAttachment());
         response.setStartDate(issue.getStartDate());
+        response.setAttachment(url.getFileUrl());
+        response.setAttachmentName(url.getFileName());
         response.setDueDate(issue.getDueDate());
         response.setPriority(issue.getPriority().name());
         response.setSeverity(issue.getSeverity().name());
@@ -600,6 +605,44 @@ public class TaskService implements ITaskService {
         response.setAssignee(assigneeResponse);
         response.setReporter(reporterResponse);
         return response;
+    }
+
+    @Override
+    public GetTaskResponse updateTask(UUID id, UUID projectId, UUID topicId, UpdateTaskRequest request) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này"));
+        User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Không tìm thấy Project Manager"));
+        if(!pmUser.getId().equals(userId)){
+            throw new ForbiddenException("Bạn không có quyền");
+        }
+
+        Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+        if(!topic.getProject().getId().equals(project.getId())){
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Task task = taskRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy task trong module này"));
+
+        PriorityEnum priority = null;
+        if (request.getPriority() != null){
+            String prioritySt = request.getPriority();
+            try{
+                priority = PriorityEnum.valueOf(prioritySt.toUpperCase());
+            }catch (IllegalArgumentException | NullPointerException e){
+                throw new InvalidEnumException("Trạng thái không hợp lệ");
+            }
+        }
+
+        task.setSummer(request.getSummer() == null ? task.getSummer() : request.getSummer());
+        task.setDescription(request.getDescription() == null ? task.getDescription() : request.getDescription());
+        task.setStartDate(request.getStartDate() == null ? task.getStartDate() : request.getStartDate());
+        task.setDueDate(request.getDueDate() == null ? task.getDueDate() : request.getDueDate());
+        task.setPriority(request.getPriority() == null ? task.getPriority() : priority);
+        task.setUpdatedAt(LocalDateTime.now());
+
+        GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
+
+        return taskResponse;
     }
 
 }

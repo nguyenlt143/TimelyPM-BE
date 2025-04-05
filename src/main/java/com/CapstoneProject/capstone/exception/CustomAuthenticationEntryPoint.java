@@ -16,6 +16,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
 
         BaseResponse<?> baseResponse = new BaseResponse<>("401", "Bạn chưa đăng nhập", null);

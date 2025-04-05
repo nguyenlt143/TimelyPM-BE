@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.service;
 
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueByTaskRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
+import com.CapstoneProject.capstone.dto.request.task.UpdateTaskRequest;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.CreateNewTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
@@ -17,5 +18,6 @@ public interface ITaskService {
     GetTaskResponse getTask(UUID id, UUID projectId, UUID topicId) throws IOException;
     Boolean deleteTask(UUID id, UUID projectId, UUID topicId);
     GetTaskResponse updateTask(UUID id, UUID projectId, UUID topicId, String status);
-    CreateNewIssueByTaskResponse createNewIssueByTask(UUID id, UUID projectId, UUID topicId, CreateNewIssueByTaskRequest request);
+    CreateNewIssueByTaskResponse createNewIssueByTask(UUID id, UUID projectId, UUID topicId, CreateNewIssueByTaskRequest request, MultipartFile file) throws IOException;
+    GetTaskResponse updateTask(UUID id, UUID projectId, UUID topicId, UpdateTaskRequest request);
 }
