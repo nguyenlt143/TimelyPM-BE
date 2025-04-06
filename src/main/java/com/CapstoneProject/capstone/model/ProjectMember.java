@@ -1,10 +1,8 @@
 package com.CapstoneProject.capstone.model;
 
+import com.CapstoneProject.capstone.enums.MemberStatusEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +16,9 @@ import java.util.List;
 @Getter
 @Setter
 public class ProjectMember extends BaseEntity{
+    @Enumerated(EnumType.STRING)
+    private MemberStatusEnum status;
+
     @ManyToOne
     @JoinColumn(name = "project_id")
     @JsonIgnore

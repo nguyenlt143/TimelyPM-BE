@@ -5,10 +5,9 @@ import com.CapstoneProject.capstone.dto.request.project.UpdateProjectRequest;
 import com.CapstoneProject.capstone.dto.response.project.CreateNewProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
-import com.CapstoneProject.capstone.enums.GenderEnum;
-import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
-import com.CapstoneProject.capstone.enums.RoleEnum;
-import com.CapstoneProject.capstone.enums.StatusEnum;
+import com.CapstoneProject.capstone.dto.response.projectMember.GetMemberPendingRespone;
+import com.CapstoneProject.capstone.dto.response.projectMember.GetProjectMemberResponse;
+import com.CapstoneProject.capstone.enums.*;
 import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.ProjectMapper;
 import com.CapstoneProject.capstone.model.*;
@@ -64,6 +63,7 @@ public class ProjectService implements IProjectService {
         projectMember.setProject(project);
         projectMember.setUser(user);
         projectMember.setRole(role);
+        projectMember.setStatus(MemberStatusEnum.APPROVED);
         projectMember.setActive(true);
         projectMember.setCreatedAt(LocalDateTime.now());
         projectMember.setUpdatedAt(LocalDateTime.now());
@@ -149,6 +149,7 @@ public class ProjectService implements IProjectService {
         projectMember.setUser(userInvite);
         projectMember.setRole(roleUser);
         projectMember.setProject(project);
+        projectMember.setStatus(MemberStatusEnum.APPROVED);
         projectMember.setCreatedAt(LocalDateTime.now());
         projectMember.setUpdatedAt(LocalDateTime.now());
         projectMember.setActive(true);
@@ -168,9 +169,7 @@ public class ProjectService implements IProjectService {
             throw new ForbiddenException("Bạn không có quyền");
         }
 
-        User userDelete = userRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
-
-        ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(project.getId(), userDelete.getId()).orElseThrow(()-> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndMemberId(project.getId(), id, MemberStatusEnum.APPROVED.name()).orElseThrow(()-> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
 
         projectMemberRepository.delete(isAlreadyMember);
         return true;
@@ -212,12 +211,13 @@ public class ProjectService implements IProjectService {
         ProjectMember projectMember = new ProjectMember();
         projectMember.setProject(project);
         projectMember.setUser(user);
+        projectMember.setStatus(MemberStatusEnum.PENDING);
+        projectMember.setActive(true);
         projectMember.setCreatedAt(LocalDateTime.now());
         projectMember.setUpdatedAt(LocalDateTime.now());
         projectMemberRepository.save(projectMember);
 
         return true;
     }
-
 
 }

@@ -66,7 +66,9 @@ public class UrlConstant {
 
     public static class MEMBER {
         public static final String MEMBER = API + "/member";
-        public static final String GET_MEMBERS = "";
+        public static final String GET_MEMBERS = "/{projectId}";
+        public static final String GET_MEMBERS_PENDING = "/{projectId}/pending";
+        public static final String UPDATE_STATUS_MEMBER = "/{projectId}/status";
     }
 
     public static class FILE {

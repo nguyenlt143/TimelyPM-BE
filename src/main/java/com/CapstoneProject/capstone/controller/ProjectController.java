@@ -113,8 +113,8 @@ public class ProjectController {
     @PreAuthorize("hasAuthority('USER')")
     @DeleteMapping(UrlConstant.PROJECT.DELETE_MEMBER)
     public ResponseEntity<BaseResponse<Boolean>> deleteMember(@PathVariable UUID id,
-                                                              @RequestParam UUID userId) {
-        boolean response = projectService.deleteUserFromProject(id, userId);
+                                                              @RequestParam UUID projectMemberId) {
+        boolean response = projectService.deleteUserFromProject(id, projectMemberId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Xóa thành viên thành công", response));
     }
 
