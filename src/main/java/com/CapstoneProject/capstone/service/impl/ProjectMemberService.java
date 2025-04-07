@@ -57,9 +57,9 @@ public class ProjectMemberService implements IProjectMemberService {
     public boolean updateProjectMemberStatus(UUID projectId, UUID id, String role, MemberStatusEnum memberStatus) {
         UUID userId = AuthenUtil.getCurrentUserId();
 
-        Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
 
-        User pmUser = userRepository.findUserWithRolePMByProjectId(id).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
+        User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
         if(!pmUser.getId().equals(userId)){
             throw new ForbiddenException("Bạn không có quyền");
         }
@@ -83,9 +83,14 @@ public class ProjectMemberService implements IProjectMemberService {
             projectmember.setUpdatedAt(LocalDateTime.now());
             projectMemberRepository.save(projectmember);
             return true;
+        }else{
+            ProjectMember projectmember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.PENDING.name()).orElseThrow(() -> new NotFoundException("Không tìm thấy đơn của người này"));
+            projectmember.setStatus(memberStatus);
+            projectmember.setUpdatedAt(LocalDateTime.now());
+            projectMemberRepository.save(projectmember);
+            return true;
         }
 
-        return false;
     }
 
     @Override

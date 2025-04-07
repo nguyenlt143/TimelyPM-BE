@@ -19,7 +19,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
     """, nativeQuery = true)
     Optional<ProjectMember> findByProjectIdAndUserId(UUID projectId, UUID userId);
 
-    @Query(value = "SELECT * FROM project_member WHERE project_id = :projectId AND user_id = :memberId AND status = :status", nativeQuery = true)
+    @Query(value = "SELECT * FROM project_member WHERE project_id = :projectId AND id = :memberId AND status = :status", nativeQuery = true)
     Optional<ProjectMember> findByProjectIdAndMemberId(@Param("projectId") UUID projectId,
                                                        @Param("memberId") UUID memberId,
                                                        @Param("status") String status);

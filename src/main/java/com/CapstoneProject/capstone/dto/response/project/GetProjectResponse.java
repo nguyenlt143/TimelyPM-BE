@@ -22,6 +22,7 @@ public class GetProjectResponse {
     private String name;
     private String image;
     private String status;
+    private String code;
     private GetProfileResponse profile;
 
     private UUID userId;

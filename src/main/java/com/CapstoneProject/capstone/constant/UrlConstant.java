@@ -77,10 +77,20 @@ public class UrlConstant {
         public static final String Add_FILE_IN_ISSUE = "/{id}/issue";
     }
 
-    public static class ADMIN{
+    public static class ADMIN {
         public static final String ADMIN = API + "/admin";
         public static final String GET_PROJECTS = "/project";
         public static final String DASHBOARD = "/dashboard";
+    }
+
+    public static class NEWS {
+        public static final String NEWS = API + "/news";
+        public static final String CREATE = "/create";
+        public static final String GET_ALL_NEWS = "";
+        public static final String GET_NEWS = "/{id}";
+        public static final String UPDATE_NEWS = "/{id}";
+        public static final String DELETE_NEWS = "/{id}";
+        public static final String UPLOAD_IMAGE = "/image";
     }
 
 }
