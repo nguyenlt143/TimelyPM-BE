@@ -31,6 +31,8 @@ public class User extends BaseEntity implements UserDetails {
     private List<ProjectMember> projectMembers;
     @OneToMany(mappedBy = "user")
     private List<Feedback> feedbacks;
+    @OneToMany(mappedBy = "user")
+    private List<Comment> comments;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -7,6 +7,7 @@ import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.news.CreateNewsResponse;
 import com.CapstoneProject.capstone.dto.response.news.GetNewsResponse;
 import com.CapstoneProject.capstone.service.INewsService;
+import com.CapstoneProject.capstone.service.impl.AppwriteStorageService;
 import com.CapstoneProject.capstone.service.impl.GoogleDriveService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -23,7 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NewsController {
     private final INewsService newsService;
-    private final GoogleDriveService googleDriveService;
+//    private final GoogleDriveService googleDriveService;
+    private final AppwriteStorageService appwriteStorageService;
 
     @PostMapping(UrlConstant.NEWS.CREATE)
     public ResponseEntity<BaseResponse<CreateNewsResponse>> create(@RequestBody CreateNewsRequest request) {
@@ -50,8 +52,8 @@ public class NewsController {
     }
 
     @PostMapping(value = UrlConstant.NEWS.UPLOAD_IMAGE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse<String>> create(@RequestParam MultipartFile file ) throws IOException {
-        String response = googleDriveService.uploadFileToDrive(file).getFileUrl();
+    public ResponseEntity<BaseResponse<String>> create(@RequestParam MultipartFile file ) throws IOException, InterruptedException {
+        String response = appwriteStorageService.uploadFileToAppwrite(file);
         return ResponseEntity.ok(new BaseResponse<>("200", "Thêm hình ảnh thành công", response));
     }
 }

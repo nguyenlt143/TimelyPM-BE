@@ -10,10 +10,11 @@ public class HtmlSanitizerUtil {
         }
 
         PolicyFactory policy = new HtmlPolicyBuilder()
-                .allowElements("p", "a", "img")
+                .allowElements("p", "a", "img", "ol", "li", "b", "i", "u", "strong", "em")
                 .allowAttributes("href", "rel", "target", "style").onElements("a")
                 .allowAttributes("src", "alt").onElements("img")
-                .allowAttributes("style").onElements("p")
+                .allowAttributes("style").onElements("p", "ol", "li", "b", "i", "u", "strong", "em")
+                .allowUrlProtocols("http", "https")
                 .toFactory();
 
         return policy.sanitize(htmlContent);

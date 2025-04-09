@@ -9,6 +9,7 @@ import com.CapstoneProject.capstone.repository.NewsRepository;
 import com.CapstoneProject.capstone.service.INewsService;
 import com.CapstoneProject.capstone.util.HtmlSanitizerUtil;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,8 @@ public class NewsService implements INewsService {
         News news = new News();
         news.setTitle(request.getTitle());
         String sanitizedContent = HtmlSanitizerUtil.sanitize(request.getContent());
+        sanitizedContent = sanitizedContent.replaceAll("&amp;mode=admin", "")
+                .replaceAll("&mode=admin", "");
         news.setContent(sanitizedContent);
         news.setActive(true);
         news.setCreatedAt(LocalDateTime.now());

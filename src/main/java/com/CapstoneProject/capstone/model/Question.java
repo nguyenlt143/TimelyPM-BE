@@ -43,4 +43,6 @@ public class Question extends BaseEntity{
     private Topic topic;
     @OneToMany(mappedBy = "question")
     private List<File> files;
+    @OneToMany(mappedBy = "question")
+    private List<Comment> comments;
 }
