@@ -37,37 +37,39 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        String token = session.getHandshakeHeaders().getFirst("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.replace("Bearer ", "").trim();
-            try {
-                String username = jwtService.extractUserName(token);
-                UserDetails userDetails = new org.springframework.security.core.userdetails.User(username, "", Collections.emptyList());
-                if (jwtService.isTokenValid(token, userDetails)) {
-                    User user = userRepository.findByUsername(username)
-                            .orElseThrow(() -> new RuntimeException("User not found"));
-                    session.getAttributes().put("username", username);
-                    session.getAttributes().put("userId", user.getId());
-                    sessions.add(session);
-                    log.info("Client connected: {} with username: {}", session.getId(), username);
-                } else {
-                    session.close(CloseStatus.NOT_ACCEPTABLE.withReason("Invalid token"));
-                    log.warn("Invalid token for session: {}", session.getId());
-                }
-            } catch (Exception e) {
-                session.close(CloseStatus.NOT_ACCEPTABLE.withReason("Token validation failed"));
-                log.error("Token validation error for session: {}", session.getId(), e);
-            }
-        } else {
-            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("No token provided in header"));
-            log.warn("No token provided for session: {}", session.getId());
-        }
+        sessions.add(session);
+        log.info("Client connected: {}", session.getId());
+        session.sendMessage(new TextMessage("{\"message\": \"Connected, please send authentication token\"}"));
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         try {
             Map<String, String> data = objectMapper.readValue(message.getPayload(), Map.class);
+            String token = data.get("token");
+
+            if (session.getAttributes().get("userId") == null) {
+                if (token == null || token.trim().isEmpty()) {
+                    session.sendMessage(new TextMessage("{\"error\": \"Authentication token required\"}"));
+                    session.close(CloseStatus.NOT_ACCEPTABLE.withReason("No token provided"));
+                    return;
+                }
+
+                String username = jwtService.extractUserName(token);
+                UserDetails userDetails = new org.springframework.security.core.userdetails.User(username, "", Collections.emptyList());
+                if (!jwtService.isTokenValid(token, userDetails)) {
+                    session.sendMessage(new TextMessage("{\"error\": \"Invalid token\"}"));
+                    session.close(CloseStatus.NOT_ACCEPTABLE.withReason("Invalid token"));
+                    return;
+                }
+
+                User user = userRepository.findByUsername(username)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+                session.getAttributes().put("username", username);
+                session.getAttributes().put("userId", user.getId());
+                log.info("Client authenticated: {} with username: {}", session.getId(), username);
+            }
+
             String questionId = data.get("questionId");
             String content = data.get("content");
 
@@ -77,11 +79,6 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
             }
 
             UUID userId = (UUID) session.getAttributes().get("userId");
-            if (userId == null) {
-                session.sendMessage(new TextMessage("{\"error\": \"User not authenticated\"}"));
-                return;
-            }
-
             UserDetails userDetails = new org.springframework.security.core.userdetails.User(
                     (String) session.getAttributes().get("username"), "", Collections.emptyList());
             User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
@@ -95,9 +92,10 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
 
             broadcastComment(response);
             log.info("Broadcasted comment: {}", response.getContent());
+            session.sendMessage(new TextMessage("{\"message\": \"Comment created successfully\"}"));
         } catch (Exception e) {
             log.error("Error handling message from session {}: {}", session.getId(), e.getMessage());
-            session.sendMessage(new TextMessage("{\"error\": \"Failed to process comment: " + e.getMessage() + "\"}"));
+            session.sendMessage(new TextMessage("{\"error\": \"Failed to process message: " + e.getMessage() + "\"}"));
         } finally {
             SecurityContextHolder.clearContext();
         }
