@@ -515,7 +515,7 @@ public class TaskService implements ITaskService {
         try {
             severity = SeverityEnum.valueOf(severityStr.toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            throw new InvalidEnumException("Severity không hợp lệ! Chỉ chấp nhận MINOR, MODERATE, SIGNIFICANT, SEVERE, CATASTROPHIC.");
+            throw new InvalidEnumException("Severity không hợp lệ! Chỉ chấp nhận MINOR, MAJOR, CRITICAL.");
         }
 
         Project project = projectRepository.findById(projectId)
