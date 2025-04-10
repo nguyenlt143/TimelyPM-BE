@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.config;
 
 import com.CapstoneProject.capstone.dto.request.comment.CreateCommentRequest;
 import com.CapstoneProject.capstone.dto.response.comment.CreateCommentResponse;
+import com.CapstoneProject.capstone.dto.response.comment.GetCommentResponse;
 import com.CapstoneProject.capstone.model.User;
 import com.CapstoneProject.capstone.repository.UserRepository;
 import com.CapstoneProject.capstone.service.ICommentService;
@@ -18,11 +19,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -47,6 +44,9 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
         try {
             Map<String, String> data = objectMapper.readValue(message.getPayload(), Map.class);
             String token = data.get("token");
+            String action = data.get("action");
+            String questionId = data.get("questionId");
+            String content = data.get("content");
 
             if (session.getAttributes().get("userId") == null) {
                 if (token == null || token.trim().isEmpty()) {
@@ -68,14 +68,7 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
                 session.getAttributes().put("username", username);
                 session.getAttributes().put("userId", user.getId());
                 log.info("Client authenticated: {} with username: {}", session.getId(), username);
-            }
-
-            String questionId = data.get("questionId");
-            String content = data.get("content");
-
-            if (questionId == null || content == null || content.trim().isEmpty()) {
-                session.sendMessage(new TextMessage("{\"error\": \"questionId and content are required\"}"));
-                return;
+                session.sendMessage(new TextMessage("{\"message\": \"Authenticated successfully\"}"));
             }
 
             UUID userId = (UUID) session.getAttributes().get("userId");
@@ -86,13 +79,29 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
                     new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                             user, null, userDetails.getAuthorities()));
 
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setContent(content);
-            CreateCommentResponse response = commentService.createComment(UUID.fromString(questionId), request);
-
-            broadcastComment(response);
-            log.info("Broadcasted comment: {}", response.getContent());
-            session.sendMessage(new TextMessage("{\"message\": \"Comment created successfully\"}"));
+            if ("getComments".equals(action)) {
+                if (questionId == null) {
+                    session.sendMessage(new TextMessage("{\"error\": \"questionId is required for getComments\"}"));
+                    return;
+                }
+                List<GetCommentResponse> comments = commentService.getAllComments(UUID.fromString(questionId));
+                String jsonResponse = objectMapper.writeValueAsString(comments);
+                session.sendMessage(new TextMessage(jsonResponse));
+                log.info("Sent comments for questionId: {}", questionId);
+            } else if ("createComment".equals(action) || action == null) {
+                if (questionId == null || content == null || content.trim().isEmpty()) {
+                    session.sendMessage(new TextMessage("{\"error\": \"questionId and content are required\"}"));
+                    return;
+                }
+                CreateCommentRequest request = new CreateCommentRequest();
+                request.setContent(content);
+                CreateCommentResponse response = commentService.createComment(UUID.fromString(questionId), request);
+                broadcastComment(response);
+                log.info("Broadcasted comment: {}", response.getContent());
+                session.sendMessage(new TextMessage("{\"message\": \"Comment created successfully\"}"));
+            } else {
+                session.sendMessage(new TextMessage("{\"error\": \"Unknown action: " + action + "\"}"));
+            }
         } catch (Exception e) {
             log.error("Error handling message from session {}: {}", session.getId(), e.getMessage());
             session.sendMessage(new TextMessage("{\"error\": \"Failed to process message: " + e.getMessage() + "\"}"));
