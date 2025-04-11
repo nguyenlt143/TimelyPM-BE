@@ -36,7 +36,7 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
         log.info("Client connected: {}", session.getId());
-        session.sendMessage(new TextMessage("{\"message\": \"Connected, please send authentication token\"}"));
+        session.sendMessage(new TextMessage("{\"message\": \"Connected, please send token and questionId\"}"));
     }
 
     @Override
@@ -48,33 +48,30 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
             String questionId = data.get("questionId");
             String content = data.get("content");
 
-            if (session.getAttributes().get("userId") == null) {
-                if (token == null || token.trim().isEmpty()) {
-                    session.sendMessage(new TextMessage("{\"error\": \"Authentication token required\"}"));
-                    session.close(CloseStatus.NOT_ACCEPTABLE.withReason("No token provided"));
-                    return;
-                }
-
-                String username = jwtService.extractUserName(token);
-                UserDetails userDetails = new org.springframework.security.core.userdetails.User(username, "", Collections.emptyList());
-                if (!jwtService.isTokenValid(token, userDetails)) {
-                    session.sendMessage(new TextMessage("{\"error\": \"Invalid token\"}"));
-                    session.close(CloseStatus.NOT_ACCEPTABLE.withReason("Invalid token"));
-                    return;
-                }
-
-                User user = userRepository.findByUsername(username)
-                        .orElseThrow(() -> new RuntimeException("User not found"));
-                session.getAttributes().put("username", username);
-                session.getAttributes().put("userId", user.getId());
-                log.info("Client authenticated: {} with username: {}", session.getId(), username);
-                session.sendMessage(new TextMessage("{\"message\": \"Authenticated successfully\"}"));
+            if (token == null || token.trim().isEmpty()) {
+                session.sendMessage(new TextMessage("{\"error\": \"Authentication token required\"}"));
+                session.close(CloseStatus.NOT_ACCEPTABLE.withReason("No token provided"));
+                return;
             }
 
-            UUID userId = (UUID) session.getAttributes().get("userId");
-            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                    (String) session.getAttributes().get("username"), "", Collections.emptyList());
-            User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
+            String username = jwtService.extractUserName(token);
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(username, "", Collections.emptyList());
+            if (!jwtService.isTokenValid(token, userDetails)) {
+                session.sendMessage(new TextMessage("{\"error\": \"Invalid token\"}"));
+                session.close(CloseStatus.NOT_ACCEPTABLE.withReason("Invalid token"));
+                return;
+            }
+
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            session.getAttributes().put("username", username);
+            session.getAttributes().put("userId", user.getId());
+            log.info("Client authenticated: {} with username: {}", session.getId(), username);
+
+            if (questionId != null && !questionId.trim().isEmpty()) {
+                session.getAttributes().put("questionId", UUID.fromString(questionId));
+            }
+
             SecurityContextHolder.getContext().setAuthentication(
                     new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
                             user, null, userDetails.getAuthorities()));
@@ -90,15 +87,13 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
                 log.info("Sent comments for questionId: {}", questionId);
             } else if ("createComment".equals(action) || action == null) {
                 if (questionId == null || content == null || content.trim().isEmpty()) {
-                    session.sendMessage(new TextMessage("{\"error\": \"questionId and content are required\"}"));
                     return;
                 }
                 CreateCommentRequest request = new CreateCommentRequest();
                 request.setContent(content);
                 CreateCommentResponse response = commentService.createComment(UUID.fromString(questionId), request);
-                broadcastComment(response);
+                broadcastComment(response, UUID.fromString(questionId));
                 log.info("Broadcasted comment: {}", response.getContent());
-                session.sendMessage(new TextMessage("{\"message\": \"Comment created successfully\"}"));
             } else {
                 session.sendMessage(new TextMessage("{\"error\": \"Unknown action: " + action + "\"}"));
             }
@@ -116,13 +111,16 @@ public class CommentWebSocketHandler extends TextWebSocketHandler {
         log.info("Client disconnected: {} with status: {}", session.getId(), status);
     }
 
-    public void broadcastComment(CreateCommentResponse comment) throws IOException {
+    public void broadcastComment(CreateCommentResponse comment, UUID questionId) throws IOException {
         String jsonMessage = objectMapper.writeValueAsString(comment);
         synchronized (sessions) {
+            log.info("Broadcasting to {} sessions for questionId: {}", sessions.size(), questionId);
             for (WebSocketSession session : sessions) {
-                if (session.isOpen()) {
+                UUID subscribedQuestionId = (UUID) session.getAttributes().get("questionId");
+                if (session.isOpen() && subscribedQuestionId != null && subscribedQuestionId.equals(questionId)) {
                     try {
                         session.sendMessage(new TextMessage(jsonMessage));
+                        log.info("Sent to session {} for questionId: {}", session.getId(), questionId);
                     } catch (IOException e) {
                         log.error("Failed to send to session {}: {}", session.getId(), e.getMessage());
                     }
