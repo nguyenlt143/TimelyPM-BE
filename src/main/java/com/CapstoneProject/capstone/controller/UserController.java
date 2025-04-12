@@ -2,12 +2,15 @@ package com.CapstoneProject.capstone.controller;
 
 import com.CapstoneProject.capstone.constant.UrlConstant;
 import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
+import com.CapstoneProject.capstone.dto.request.auth.ChangePasswordRequest;
+import com.CapstoneProject.capstone.dto.request.auth.UpdateProfileRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.auth.AuthenticateResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.service.IUserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +20,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +47,24 @@ public class UserController {
     public ResponseEntity<BaseResponse<GetUserResponse>> getUser() {
         GetUserResponse data = userService.getUser();
         return ResponseEntity.ok(new BaseResponse<>("200", "Hồ sơ người dùng", data));
+    }
+
+    @PostMapping(UrlConstant.USER.CHANGE_PASSWORD)
+    public ResponseEntity<BaseResponse<Boolean>> changePassword(@RequestBody @Valid ChangePasswordRequest request) {
+        boolean response = userService.changePassword(request);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Change password successful", response));
+    }
+
+    @PostMapping(UrlConstant.USER.UPLOAD_AVATAR)
+    public ResponseEntity<BaseResponse<Boolean>> uploadAvatar(@RequestPart MultipartFile file) throws IOException, InterruptedException {
+        boolean response = userService.uploadAvatar(file);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Upload avatar successful", response));
+    }
+
+    @PostMapping(UrlConstant.USER.UPDATE_PROFILE)
+    public ResponseEntity<BaseResponse<GetUserResponse>> updateProfile(@RequestBody UpdateProfileRequest request) {
+        GetUserResponse response = userService.updateProfile(request);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Update profile successful", response));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")

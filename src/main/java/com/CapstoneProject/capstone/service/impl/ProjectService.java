@@ -259,4 +259,14 @@ public class ProjectService implements IProjectService {
         return true;
     }
 
+    @Override
+    public List<GetProjectResponse> getAllProjectsByUserId() {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        List<Project> projects = projectRepository.getApprovedProjectsByUserId(userId);
+
+        return projects.stream().map(GetProjectResponse::new).collect(Collectors.toList());
+    }
+
 }

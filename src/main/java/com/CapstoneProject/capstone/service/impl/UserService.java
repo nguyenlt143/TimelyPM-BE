@@ -1,12 +1,15 @@
 package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
+import com.CapstoneProject.capstone.dto.request.auth.ChangePasswordRequest;
+import com.CapstoneProject.capstone.dto.request.auth.UpdateProfileRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
 import com.CapstoneProject.capstone.dto.response.auth.AuthenticateResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.enums.GenderEnum;
 import com.CapstoneProject.capstone.enums.RoleEnum;
+import com.CapstoneProject.capstone.exception.InformationException;
 import com.CapstoneProject.capstone.exception.InvalidEnumException;
 import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.exception.UserExisted;
@@ -26,11 +29,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -45,6 +51,7 @@ public class UserService implements IUserService {
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
     private final UserProfileMapper userProfileMapper;
+    private final AppwriteStorageService appwriteStorageService;
 
     @Override
     @Transactional
@@ -140,5 +147,129 @@ public class UserService implements IUserService {
             return response;
         }).collect(Collectors.toList());
         return userResponses;
+    }
+
+    @Override
+    public Boolean changePassword(ChangePasswordRequest request) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found!"));
+
+        if (!user.getPassword().equals(passwordEncoder.encode(request.getOldPassword()))) {
+            throw new InformationException("Old password doesn't match!");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return true;
+    }
+
+    @Override
+    public Boolean uploadAvatar(MultipartFile file) throws IOException, InterruptedException {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found!"));
+
+        UserProfile userProfile = userProfileRepository.findByUserId(userId).orElseThrow(() -> new NotFoundException("Profile not found!"));
+
+        userProfile.setAvatarUrl(appwriteStorageService.uploadFileToAppwrite(file));
+        userProfile.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(userProfile);
+
+        return true;
+    }
+
+    @Override
+    public GetUserResponse updateProfile(UpdateProfileRequest request) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found!"));
+
+        UserProfile userProfile = userProfileRepository.findByUserId(userId).orElseThrow(() -> new NotFoundException("Profile not found!"));
+
+        GenderEnum gender = null;
+        if (request.getGender() != null){
+            String genderSt = request.getGender();
+            try{
+                gender = GenderEnum.valueOf(genderSt.toUpperCase());
+            }catch (IllegalArgumentException | NullPointerException e){
+                throw new InvalidEnumException("Trạng thái không hợp lệ");
+            }
+        }
+
+        userProfile.setGender(request.getGender() == null ? userProfile.getGender() : gender.name());
+        userProfile.setFullName(request.getFullName() == null ? userProfile.getFullName() : request.getFullName());
+        userProfile.setPhone(request.getPhone() == null ? userProfile.getPhone() : request.getPhone());
+        userProfile.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(userProfile);
+
+        GetUserResponse response = userMapper.getUserResponse(user);
+        response.setProfile(userProfileMapper.toProfile(userProfile));
+        return response;
+    }
+
+    @Transactional
+    public AuthenticateResponse handleGoogleLogin(OAuth2User principal) {
+        String email = principal.getAttribute("email");
+        String name = principal.getAttribute("name");
+        String picture = principal.getAttribute("picture");
+
+        Optional<User> existingUser = userRepository.findByEmail(email);
+        User user;
+
+        if (existingUser.isPresent()) {
+            user = existingUser.get();
+        } else {
+            user = registerGoogleUser(email, name, picture);
+        }
+
+        return authenticateUser(user);
+    }
+
+    private User registerGoogleUser(String email, String name, String picture) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new UserExisted("Email đã tồn tại!");
+        }
+
+        String username = email.split("@")[0];
+        int suffix = 1;
+        String baseUsername = username;
+        while (userRepository.findByUsername(username).isPresent()) {
+            username = baseUsername + suffix;
+            suffix++;
+        }
+
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode("google-auth-" + email));
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        user.setActive(true);
+
+        Role role = roleRepository.findByName(RoleEnum.USER);
+        user.setRole(role);
+
+        userRepository.save(user);
+
+        UserProfile userProfile = new UserProfile();
+        userProfile.setFullName(name);
+        userProfile.setAvatarUrl(picture);
+        userProfile.setGender(GenderEnum.MALE.name());
+        userProfile.setUser(user);
+
+        userProfileRepository.save(userProfile);
+
+        return user;
+    }
+
+    private AuthenticateResponse authenticateUser(User user) {
+        String jwtToken = jwtService.generateToken(user);
+
+        AuthenticateResponse response = new AuthenticateResponse();
+        response.setToken(jwtToken);
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setRole(user.getRole().getName().name());
+        return response;
     }
 }

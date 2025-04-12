@@ -29,4 +29,13 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     @Query(value = "SELECT COUNT(*) FROM Project WHERE status = :status AND active = true", nativeQuery = true)
     int countByStatus(@Param("status") String status);
+
+    @Query(value = """
+        SELECT p.*
+        FROM project p
+        JOIN project_member pm ON p.id = pm.project_id
+        WHERE pm.user_id = :userId
+        AND pm.status = 'APPROVED'
+        """, nativeQuery = true)
+    List<Project> getApprovedProjectsByUserId(@Param("userId") UUID userId);
 }

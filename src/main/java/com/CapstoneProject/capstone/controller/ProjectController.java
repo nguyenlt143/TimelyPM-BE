@@ -77,7 +77,7 @@ public class ProjectController {
     @PreAuthorize("hasAuthority('USER')")
     @GetMapping(UrlConstant.PROJECT.GET_PROJECTS_BY_USER)
     public ResponseEntity<BaseResponse<List<GetProjectResponse>>> getProjectsByUser() {
-        List<GetProjectResponse> response = projectService.getProjectByUser();
+        List<GetProjectResponse> response = projectService.getAllProjectsByUserId();
         return ResponseEntity.ok(new BaseResponse<>("200", "Danh sách dự án", response));
     }
 
@@ -128,7 +128,7 @@ public class ProjectController {
     @PreAuthorize("hasAuthority('USER')")
     @PostMapping(UrlConstant.PROJECT.PROCESS_PROJECT)
     public ResponseEntity<BaseResponse<Boolean>> processProject(@PathVariable UUID id) {
-        boolean response = projectService.closeProject(id);
+        boolean response = projectService.processingProject(id);
         return ResponseEntity.ok(new BaseResponse<>("200", "chuyển trạng thái dự án thành công", response));
     }
 }

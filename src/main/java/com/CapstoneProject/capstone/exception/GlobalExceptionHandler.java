@@ -119,6 +119,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InformationException.class)
+    public ResponseEntity<BaseResponse<?>> informationException(InformationException ex) {
+        BaseResponse<?> response = new BaseResponse<>();
+        response.setCode("400");
+        response.setMessage(ex.getMessage());
+        response.setData(null);
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ProjectAlreadyCompletedException .class)
     public ResponseEntity<BaseResponse<?>> projectAlreadyCompletedException (ProjectAlreadyCompletedException  ex) {
         BaseResponse<?> response = new BaseResponse<>();
