@@ -93,4 +93,11 @@ public class TaskController {
         boolean response = taskService.deleteTask(id, projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Xóa task thành công", response));
     }
+
+    @PreAuthorize("hasAuthority('USER')")
+    @GetMapping(UrlConstant.TASK.GET_ALL_TASKS_BY_PROJECT)
+    public ResponseEntity<BaseResponse<List<GetTaskResponse>>> GetAllTaskByProject(@PathVariable UUID projectId) {
+        List<GetTaskResponse> response = taskService.getTasksByProjectId(projectId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách task thành công", response));
+    }
 }

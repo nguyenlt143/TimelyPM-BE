@@ -25,6 +25,7 @@ public class UrlConstant {
         public static final String DELETE_MEMBER = "/{id}/delete/member";
         public static final String CLOSE_PROJECT = "/{id}/close";
         public static final String JOIN_PROJECT = "/join";
+        public static final String PROCESS_PROJECT = "/{id}/process";
     }
 
     public static class TOPIC {
@@ -45,6 +46,7 @@ public class UrlConstant {
         public static final String DELETE_TASKS = "/{id}";
         public static final String CREATE_ISSUE_BY_TASK = "/{id}/issue";
         public static final String UPDATE_TASK = "/{id}/update";
+        public static final String GET_ALL_TASKS_BY_PROJECT = "/task/{projectId}/project";
     }
 
     public static class ISSUE {
@@ -55,6 +57,8 @@ public class UrlConstant {
         public static final String GET_ISSUE_BY_TASK = "/{id}/task";
         public static final String UPDATE_ISSUE = "/{id}";
         public static final String DELETE_ISSUE = "/{id}";
+        public static final String UPDATE_ISSUES = "/{id}/update";
+        public static final String GET_ALL_ISSUES_BY_PROJECT = "/issue/{projectId}/project";
     }
 
     public static class QUESTION {
@@ -91,6 +95,19 @@ public class UrlConstant {
         public static final String UPDATE_NEWS = "/{id}";
         public static final String DELETE_NEWS = "/{id}";
         public static final String UPLOAD_IMAGE = "/image";
+    }
+
+    public static class FEEDBACK {
+        public static final String FEEDBACK = API + "/feedback";
+        public static final String CREATE = "/create";
+        public static final String GET_ALL_FEEDBACK = "";
+        public static final String GET_FEEDBACK = "/{id}";
+        public static final String DELETE_FEEDBACK = "/{id}";
+    }
+
+    public static class PROJECT_ACTIVITY_LOG {
+        public static final String PROJECT_ACTIVITY = API + "/activity";
+        public static final String GET_ALL = "/{projectId}";
     }
 
 }

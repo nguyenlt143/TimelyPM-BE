@@ -2,7 +2,9 @@ package com.CapstoneProject.capstone.controller;
 
 import com.CapstoneProject.capstone.constant.UrlConstant;
 import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueRequest;
+import com.CapstoneProject.capstone.dto.request.issue.UpdateIssueRequest;
 import com.CapstoneProject.capstone.dto.request.task.CreateNewTaskRequest;
+import com.CapstoneProject.capstone.dto.request.task.UpdateTaskRequest;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
@@ -80,5 +82,22 @@ public class IssueController {
                                                              @RequestParam UUID topicId) {
         boolean response = issueService.deleteIssue(id, projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Xóa task thành công", response));
+    }
+
+    @PreAuthorize("hasAuthority('USER')")
+    @PutMapping(UrlConstant.ISSUE.UPDATE_ISSUES)
+    public ResponseEntity<BaseResponse<GetIssueResponse>> UpdateTask(@PathVariable UUID id,
+                                                                    @RequestParam UUID projectId,
+                                                                    @RequestParam UUID topicId,
+                                                                    @RequestParam UpdateIssueRequest request) {
+        GetIssueResponse response = issueService.UpdateIssue(id, projectId, topicId, request);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Update task thành công", response));
+    }
+
+    @PreAuthorize("hasAuthority('USER')")
+    @GetMapping(UrlConstant.ISSUE.GET_ALL_ISSUES_BY_PROJECT)
+    public ResponseEntity<BaseResponse<List<GetIssueResponse>>> GetAllIssueByProject(@PathVariable UUID projectId) {
+        List<GetIssueResponse> response = issueService.getIssuesByProjectId(projectId);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách issue thành công", response));
     }
 }

@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.response.projectMember.GetMemberPendingRespone;
 import com.CapstoneProject.capstone.dto.response.projectMember.GetProjectMemberResponse;
+import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
 import com.CapstoneProject.capstone.enums.MemberStatusEnum;
 import com.CapstoneProject.capstone.enums.RoleEnum;
 import com.CapstoneProject.capstone.exception.ForbiddenException;
@@ -10,6 +11,7 @@ import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.exception.UserExisted;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
+import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.IProjectMemberService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class ProjectMemberService implements IProjectMemberService {
     private final ProjectRepository projectRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final IProjectActivityLogService projectActivityLogService;
 
     @Override
     public List<GetProjectMemberResponse> getProjectMembers(UUID projectId) {
@@ -81,6 +84,9 @@ public class ProjectMemberService implements IProjectMemberService {
             projectmember.setStatus(memberStatus);
             projectmember.setRole(roleUser);
             projectmember.setUpdatedAt(LocalDateTime.now());
+
+            projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_MODULE);
+
             projectMemberRepository.save(projectmember);
             return true;
         }else{

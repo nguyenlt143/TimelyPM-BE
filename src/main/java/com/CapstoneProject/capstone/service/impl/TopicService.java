@@ -5,6 +5,7 @@ import com.CapstoneProject.capstone.dto.request.topic.UpdateTopicRequest;
 import com.CapstoneProject.capstone.dto.response.topic.CreateNewTopicResponse;
 import com.CapstoneProject.capstone.dto.response.topic.GetTopicResponse;
 import com.CapstoneProject.capstone.dto.response.topic.UpdateTopicResponse;
+import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
 import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.CapstoneProject.capstone.enums.TopicTypeEnum;
@@ -15,6 +16,7 @@ import com.CapstoneProject.capstone.exception.ProjectAlreadyCompletedException;
 import com.CapstoneProject.capstone.mapper.TopicMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
+import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.ITopicService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,8 @@ public class TopicService implements ITopicService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final IProjectActivityLogService projectActivityLogService;
+
     @Override
     public CreateNewTopicResponse createNewTopic(CreateNewTopicRequest request) {
         Project project = projectRepository.findById(request.getProjectId()).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
@@ -65,6 +69,9 @@ public class TopicService implements ITopicService {
         topic.setCreatedAt(LocalDateTime.now());
         topic.setUpdatedAt(LocalDateTime.now());
         topicRepository.save(topic);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_MODULE);
+
         return topicMapper.toResponse(topic);
     }
 
@@ -100,6 +107,9 @@ public class TopicService implements ITopicService {
         topic.setActive(false);
         topic.setUpdatedAt(LocalDateTime.now());
         topicRepository.save(topic);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.DELETE_MODULE);
+
         return true;
     }
 
@@ -135,6 +145,9 @@ public class TopicService implements ITopicService {
             }
         }
         topicRepository.save(topic);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_MODULE);
+
         UpdateTopicResponse response = new UpdateTopicResponse();
         response.setType(topic.getType().toUpperCase());
         response.setDescription(topic.getDescription());

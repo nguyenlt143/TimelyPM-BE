@@ -56,6 +56,7 @@ public class CommentService implements ICommentService {
         response.setId(comment.getId());
         response.setContent(comment.getContent());
         response.setUserId(userId);
+        response.setAvatarUrl(userProfile.getAvatarUrl());
         response.setFullName(userProfile.getFullName());
         response.setQuestionId(questionId);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -81,6 +82,7 @@ public class CommentService implements ICommentService {
             response.setId(comment.getId());
             response.setContent(comment.getContent());
             response.setUserId(comment.getUser().getId());
+            response.setAvatarUrl(userProfile.getAvatarUrl());
             response.setFullName(userProfile.getFullName());
             response.setQuestionId(question.getId());
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

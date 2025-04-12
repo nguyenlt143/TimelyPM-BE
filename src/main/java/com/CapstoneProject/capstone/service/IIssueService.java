@@ -19,4 +19,5 @@ public interface IIssueService {
     GetIssueResponse updateIssue(UUID id, UUID projectId, UUID topicId, String status) throws IOException;
     Boolean deleteIssue(UUID id, UUID projectId, UUID topicId);
     GetIssueResponse UpdateIssue(UUID id, UUID projectId, UUID topicId, UpdateIssueRequest request);
+    List<GetIssueResponse> getIssuesByProjectId(UUID projectId);
 }

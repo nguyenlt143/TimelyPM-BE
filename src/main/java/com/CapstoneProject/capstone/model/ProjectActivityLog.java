@@ -1,9 +1,8 @@
 package com.CapstoneProject.capstone.model;
 
+import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,8 +14,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ProjectActivityLog extends BaseEntity{
-    private String activityType;
-    private String details;
+    @Enumerated(EnumType.STRING)
+    private ActivityTypeEnum activityType;
     @ManyToOne
     @JoinColumn(name = "project_id")
     @JsonIgnore

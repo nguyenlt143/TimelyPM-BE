@@ -6,6 +6,7 @@ import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.question.CreateNewQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.question.GetQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
+import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.CapstoneProject.capstone.exception.*;
@@ -13,6 +14,7 @@ import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
+import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.IQuestionService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,8 @@ public class QuestionService implements IQuestionService {
     private final UserProfileMapper userProfileMapper;
     private final UserProfileRepository profileRepository;
     private final ProjectRepository projectRepository;
+    private final IProjectActivityLogService projectActivityLogService;
+
     @Override
     public CreateNewQuestionResponse createNewQuestion(UUID projectId, UUID topicId, CreateNewQuestionRequest request) {
         String priorityStr = request.getPriority();
@@ -92,6 +96,9 @@ public class QuestionService implements IQuestionService {
         question.setUpdatedAt(LocalDateTime.now());
         question.setTopic(topic);
         questionRepository.save(question);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_QUESTION);
+
         User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
         UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();

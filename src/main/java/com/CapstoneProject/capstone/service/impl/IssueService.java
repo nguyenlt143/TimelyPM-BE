@@ -8,6 +8,7 @@ import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
+import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
 import com.CapstoneProject.capstone.enums.SeverityEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
@@ -17,6 +18,7 @@ import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
 import com.CapstoneProject.capstone.service.IIssueService;
+import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import com.google.api.services.drive.Drive;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class IssueService implements IIssueService {
     private final UserProfileRepository userProfileRepository;
     private final GoogleDriveService googleDriveService;
     private final FileRepository fileRepository;
+    private final IProjectActivityLogService projectActivityLogService;
 
     @Override
     public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request, MultipartFile file) throws IOException {
@@ -123,6 +126,9 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issue.setTopic(topic);
         issueRepository.save(issue);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_ISSUE);
+
         User user = userRepository.findById(assignee.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
         UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
@@ -508,6 +514,8 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issueRepository.save(issue);
 
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_ISSUE);
+
         Drive driveService = googleDriveService.getDriveService();
         String fileId = googleDriveService.extractFileId(issue.getAttachment());
         com.google.api.services.drive.model.File file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
@@ -566,6 +574,9 @@ public class IssueService implements IIssueService {
         issue.setActive(false);
         issue.setUpdatedAt(LocalDateTime.now());
         issueRepository.save(issue);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.DELETE_ISSUE);
+
         return true;
     }
 
@@ -612,6 +623,9 @@ public class IssueService implements IIssueService {
         issue.setPriority(request.getPriority() == null ? issue.getPriority() : priority);
         issue.setSeverity(request.getSeverity() == null ? issue.getSeverity() : severity);
         issue.setUpdatedAt(LocalDateTime.now());
+        issueRepository.save(issue);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_ISSUE);
 
         GetIssueResponse issueResponse = new GetIssueResponse();
         issueResponse.setId(issue.getId());
@@ -624,5 +638,102 @@ public class IssueService implements IIssueService {
         issueResponse.setStatus(issue.getStatus().toString());
 
         return issueResponse;
+    }
+
+    @Override
+    public List<GetIssueResponse> getIssuesByProjectId(UUID projectId) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này"));
+
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(() -> new NotFoundException("Bạn không phải thành viên của project này"));
+
+        List<Issue> issues = issueRepository.findByProjectId(projectId);
+
+        List<GetIssueResponse> responses = issues.stream().map(issue -> {
+            User user = userRepository.findById(issue.getCreatedBy().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse userResponse = userMapper.getUserResponse(user);
+            UserProfile userProfile = profileRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
+            User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse userAssigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile userProfileAssignee = userProfileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
+            User reporter = userRepository.findById(issue.getReporter().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetUserResponse userReporterResponse = userMapper.getUserResponse(reporter);
+            UserProfile userProfileReporter = userProfileRepository.findByUserId(reporter.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+
+            GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
+            GetProfileResponse userProfileAssigneeResponse = userProfileMapper.toProfile(userProfileAssignee);
+            GetProfileResponse userProfileReporterResponse = userProfileMapper.toProfile(userProfileReporter);
+
+            userAssigneeResponse.setProfile(userProfileAssigneeResponse);
+            userResponse.setProfile(profileResponse);
+            userReporterResponse.setProfile(userProfileReporterResponse);
+
+            Drive driveService = null;
+            try {
+                driveService = googleDriveService.getDriveService();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            String fileId = googleDriveService.extractFileId(issue.getAttachment());
+            com.google.api.services.drive.model.File file = null;
+            try {
+                file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
+            googleDriveResponse.setFileUrl(file.getWebViewLink());
+            googleDriveResponse.setFileName(file.getName());
+            googleDriveResponse.setDownloadUrl(file.getWebContentLink());
+
+            List<GoogleDriveResponse> googleDriveResponses = new ArrayList<>();
+            List<File> files = fileRepository.findByTaskId(issue.getId());
+            for (File fileIssue : files) {
+                String fileIssueId = googleDriveService.extractFileId(fileIssue.getUrl());
+                try {
+                    com.google.api.services.drive.model.File driveFile = driveService.files()
+                            .get(fileIssueId)
+                            .setFields("name, webViewLink, webContentLink")
+                            .execute();
+
+                    GoogleDriveResponse fileResponse = new GoogleDriveResponse();
+                    fileResponse.setFileName(driveFile.getName());
+                    fileResponse.setFileUrl(driveFile.getWebViewLink());
+                    fileResponse.setDownloadUrl(driveFile.getWebContentLink());
+
+                    googleDriveResponses.add(fileResponse);
+                } catch (IOException e) {
+                    throw new RuntimeException("Lỗi khi lấy thông tin file từ Google Drive", e);
+                }
+            }
+
+            GetIssueResponse issueResponse = new GetIssueResponse();
+            issueResponse.setId(issue.getId());
+            issueResponse.setLabel(issue.getLabel());
+            issueResponse.setSummer(issue.getSummer());
+            issueResponse.setDescription(issue.getDescription());
+            issueResponse.setAttachment(googleDriveResponse);
+            issueResponse.setStartDate(issue.getStartDate());
+            issueResponse.setDueDate(issue.getDueDate());
+            issueResponse.setPriority(issue.getPriority().toString());
+            issueResponse.setSeverity(issue.getSeverity().toString());
+            issueResponse.setStatus(issue.getStatus().toString());
+            issueResponse.setUser(userResponse);
+            issueResponse.setAssignee(userAssigneeResponse);
+            issueResponse.setReporter(userReporterResponse);
+            issueResponse.setFileResponses(googleDriveResponses);
+            return issueResponse;
+        }).collect(Collectors.toList());
+        return responses;
+
     }
 }

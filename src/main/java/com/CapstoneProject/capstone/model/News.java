@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,5 +15,6 @@ import org.checkerframework.checker.units.qual.A;
 @Setter
 public class News extends BaseEntity{
     private String title;
+    @Column(name = "content",columnDefinition = "TEXT")
     private String content;
 }

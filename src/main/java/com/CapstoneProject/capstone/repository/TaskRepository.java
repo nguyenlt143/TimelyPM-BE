@@ -22,4 +22,13 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             """, nativeQuery = true)
     Optional<String> findMaxTaskLabelByTopicId(@Param("topicId") UUID topicId);
 
+    @Query(value = """
+    SELECT t.*
+    FROM task t
+    JOIN topic tp ON t.topic_id = tp.id
+    WHERE t.active = true
+      AND tp.project_id = :projectId
+    """, nativeQuery = true)
+    List<Task> findByProjectId(@Param("projectId") UUID projectId);
+
 }

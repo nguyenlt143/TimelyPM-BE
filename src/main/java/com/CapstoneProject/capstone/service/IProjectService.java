@@ -23,4 +23,5 @@ public interface IProjectService {
     List<GetProjectResponse> getProjectByUser();
     boolean closeProject(UUID id);
     boolean joinProject(String code);
+    boolean processingProject(UUID id);
 }

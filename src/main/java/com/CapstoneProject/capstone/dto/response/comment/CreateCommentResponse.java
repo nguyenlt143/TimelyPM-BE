@@ -18,6 +18,7 @@ public class CreateCommentResponse {
     private UUID userId;
     private String fullName;
     private UUID questionId;
+    private String avatarUrl;
     private String content;
     private String createdAt;
 }

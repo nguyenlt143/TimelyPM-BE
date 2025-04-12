@@ -20,4 +20,5 @@ public interface ITaskService {
     GetTaskResponse updateTask(UUID id, UUID projectId, UUID topicId, String status);
     CreateNewIssueByTaskResponse createNewIssueByTask(UUID id, UUID projectId, UUID topicId, CreateNewIssueByTaskRequest request, MultipartFile file) throws IOException;
     GetTaskResponse updateTask(UUID id, UUID projectId, UUID topicId, UpdateTaskRequest request);
+    List<GetTaskResponse> getTasksByProjectId(UUID projectId);
 }

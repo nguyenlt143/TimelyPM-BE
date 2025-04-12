@@ -1,0 +1,20 @@
+package com.CapstoneProject.capstone.enums;
+
+public enum ActivityTypeEnum {
+    CREATE_PROJECT,
+    DELETE_PROJECT,
+    UPDATE_PROJECT,
+    CHANGE_STATUS,
+    CREATE_TASK,
+    UPDATE_TASK,
+    DELETE_TASK,
+    CREATE_ISSUE,
+    UPDATE_ISSUE,
+    DELETE_ISSUE,
+    CREATE_MODULE,
+    UPDATE_MODULE,
+    DELETE_MODULE,
+    CREATE_QUESTION,
+    MEMBER_JOIN,
+    REMOVE_MEMBER
+}

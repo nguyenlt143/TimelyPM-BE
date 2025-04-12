@@ -124,4 +124,11 @@ public class ProjectController {
         boolean response = projectService.closeProject(id);
         return ResponseEntity.ok(new BaseResponse<>("200", "Đóng dự án thành công", response));
     }
+
+    @PreAuthorize("hasAuthority('USER')")
+    @PostMapping(UrlConstant.PROJECT.PROCESS_PROJECT)
+    public ResponseEntity<BaseResponse<Boolean>> processProject(@PathVariable UUID id) {
+        boolean response = projectService.closeProject(id);
+        return ResponseEntity.ok(new BaseResponse<>("200", "chuyển trạng thái dự án thành công", response));
+    }
 }

@@ -12,6 +12,7 @@ import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.ProjectMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
+import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.IProjectService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import jakarta.transaction.Transactional;
@@ -35,6 +36,8 @@ public class ProjectService implements IProjectService {
     private final UserProfileRepository userProfileRepository;
     private final RoleRepository roleRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectActivityLogRepository projectActivityLogRepository;
+    private final IProjectActivityLogService projectActivityLogService;
 
     @Override
     @Transactional
@@ -58,6 +61,8 @@ public class ProjectService implements IProjectService {
         project.setUpdatedAt(LocalDateTime.now());
         project.setActive(true);
         projectRepository.save(project);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_PROJECT);
 
         ProjectMember projectMember = new ProjectMember();
         projectMember.setProject(project);
@@ -93,6 +98,9 @@ public class ProjectService implements IProjectService {
         project.setActive(false);
         project.setUpdatedAt(LocalDateTime.now());
         projectRepository.save(project);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.DELETE_PROJECT);
+
         return true;
     }
 
@@ -112,6 +120,9 @@ public class ProjectService implements IProjectService {
         project.setStatus(request.getStatus() == null ? project.getStatus() : request.getStatus());
         project.setUpdatedAt(LocalDateTime.now());
         projectRepository.save(project);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_PROJECT);
+
         UpdateProjectResponse response = projectMapper.toUpdateResponse(project);
         return response;
     }
@@ -155,6 +166,8 @@ public class ProjectService implements IProjectService {
         projectMember.setActive(true);
         projectMemberRepository.save(projectMember);
 
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.MEMBER_JOIN);
+
         return true;
     }
 
@@ -172,6 +185,9 @@ public class ProjectService implements IProjectService {
         ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndMemberId(project.getId(), id, MemberStatusEnum.APPROVED.name()).orElseThrow(()-> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
 
         projectMemberRepository.delete(isAlreadyMember);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.REMOVE_MEMBER);
+
         return true;
     }
 
@@ -195,9 +211,12 @@ public class ProjectService implements IProjectService {
             throw new ForbiddenException("Bạn không có quyền");
         }
 
-        project.setStatus(StatusEnum.DONE.name());
+        project.setStatus(ProjectStatusEnum.DONE.name());
         project.setUpdatedAt(LocalDateTime.now());
         projectRepository.save(project);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.CHANGE_STATUS);
+
         return true;
     }
 
@@ -216,6 +235,26 @@ public class ProjectService implements IProjectService {
         projectMember.setCreatedAt(LocalDateTime.now());
         projectMember.setUpdatedAt(LocalDateTime.now());
         projectMemberRepository.save(projectMember);
+
+        return true;
+    }
+
+    @Override
+    public boolean processingProject(UUID id) {
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
+
+        User pmUser = userRepository.findUserWithRolePMByProjectId(id).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
+        if(!pmUser.getId().equals(userId)){
+            throw new ForbiddenException("Bạn không có quyền");
+        }
+
+        project.setStatus(ProjectStatusEnum.PROCESSING.name());
+        project.setUpdatedAt(LocalDateTime.now());
+        projectRepository.save(project);
+
+        projectActivityLogService.logActivity(project, ActivityTypeEnum.CHANGE_STATUS);
 
         return true;
     }

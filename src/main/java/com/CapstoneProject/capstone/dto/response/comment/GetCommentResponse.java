@@ -15,6 +15,7 @@ public class GetCommentResponse {
     private UUID id;
     private UUID userId;
     private String fullName;
+    private String avatarUrl;
     private UUID questionId;
     private String content;
     private String createdAt;
