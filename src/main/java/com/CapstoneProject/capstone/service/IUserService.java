@@ -8,6 +8,7 @@ import com.CapstoneProject.capstone.dto.response.auth.AuthenticateResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.model.User;
+import com.google.firebase.auth.FirebaseAuthException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,5 +36,6 @@ public interface IUserService {
     GetUserResponse updateProfile(UpdateProfileRequest request);
 
     AuthenticateResponse handleGoogleLogin(OAuth2User principal);
+    AuthenticateResponse loginGoogle(String accessToken) throws FirebaseAuthException;
 }
 

@@ -25,51 +25,51 @@ public class GoogleAuthenticationController {
     private static final Logger logger = (Logger) LoggerFactory.getLogger(GoogleAuthenticationController.class);
     private final IUserService userService;
 
-    @GetMapping("/api/user/google-auth/login")
-    public void login(HttpServletResponse response) throws IOException {
-        response.sendRedirect("/oauth2/authorization/google");
-    }
+//    @GetMapping("/api/user/google-auth/login")
+//    public void login(HttpServletResponse response) throws IOException {
+//        response.sendRedirect("/oauth2/authorization/google");
+//    }
 
-    @GetMapping("/api/user/google-auth/success")
-    public ResponseEntity<Map<String, Object>> handleGoogleSuccess(@AuthenticationPrincipal OAuth2User principal, HttpServletRequest request) {
-        logger.info("Request URL: {}", request.getRequestURL());
-        logger.info("SecurityContext authentication: {}", SecurityContextHolder.getContext().getAuthentication());
-        logger.info("OAuth2User principal: {}", principal != null ? principal.getAttributes() : "null");
-
-        Map<String, Object> response = new HashMap<>();
-        if (principal == null) {
-            logger.error("Failed to authenticate with Google - principal is null");
-            response.put("status", "error");
-            response.put("message", "Đăng nhập Google thất bại. Vui lòng thử lại.");
-            return ResponseEntity.status(401).body(response);
-        }
-
-        logger.info("Successfully authenticated with Google. User email: {}", Optional.ofNullable(principal.getAttribute("email")));
-        AuthenticateResponse authResponse = userService.handleGoogleLogin(principal);
-        response.put("status", "success");
-        response.put("data", authResponse);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/api/user/google-auth/signin-google")
-    public ResponseEntity<Map<String, Object>> handleGoogleCallback(@AuthenticationPrincipal OAuth2User principal, HttpServletRequest request) {
-        logger.info("Request URL: {}", request.getRequestURL());
-        logger.info("Request params: {}", request.getParameterMap());
-        logger.info("SecurityContext authentication: {}", SecurityContextHolder.getContext().getAuthentication());
-        logger.info("OAuth2User principal: {}", principal != null ? principal.getAttributes() : "null");
-
-        Map<String, Object> response = new HashMap<>();
-        if (principal == null) {
-            logger.error("Failed to authenticate with Google - principal is null");
-            response.put("status", "error");
-            response.put("message", "Đăng nhập Google thất bại. Vui lòng thử lại hoặc kiểm tra quyền truy cập.");
-            return ResponseEntity.status(401).body(response);
-        }
-
-        logger.info("Successfully authenticated with Google. User email: {}", Optional.ofNullable(principal.getAttribute("email")));
-        AuthenticateResponse authResponse = userService.handleGoogleLogin(principal);
-        response.put("status", "success");
-        response.put("data", authResponse);
-        return ResponseEntity.ok(response);
-    }
+//    @GetMapping("/api/user/google-auth/success")
+//    public ResponseEntity<Map<String, Object>> handleGoogleSuccess(@AuthenticationPrincipal OAuth2User principal, HttpServletRequest request) {
+//        logger.info("Request URL: {}", request.getRequestURL());
+//        logger.info("SecurityContext authentication: {}", SecurityContextHolder.getContext().getAuthentication());
+//        logger.info("OAuth2User principal: {}", principal != null ? principal.getAttributes() : "null");
+//
+//        Map<String, Object> response = new HashMap<>();
+//        if (principal == null) {
+//            logger.error("Failed to authenticate with Google - principal is null");
+//            response.put("status", "error");
+//            response.put("message", "Đăng nhập Google thất bại. Vui lòng thử lại.");
+//            return ResponseEntity.status(401).body(response);
+//        }
+//
+//        logger.info("Successfully authenticated with Google. User email: {}", Optional.ofNullable(principal.getAttribute("email")));
+//        AuthenticateResponse authResponse = userService.handleGoogleLogin(principal);
+//        response.put("status", "success");
+//        response.put("data", authResponse);
+//        return ResponseEntity.ok(response);
+//    }
+//
+//    @GetMapping("/api/user/google-auth/signin-google")
+//    public ResponseEntity<Map<String, Object>> handleGoogleCallback(@AuthenticationPrincipal OAuth2User principal, HttpServletRequest request) {
+//        logger.info("Request URL: {}", request.getRequestURL());
+//        logger.info("Request params: {}", request.getParameterMap());
+//        logger.info("SecurityContext authentication: {}", SecurityContextHolder.getContext().getAuthentication());
+//        logger.info("OAuth2User principal: {}", principal != null ? principal.getAttributes() : "null");
+//
+//        Map<String, Object> response = new HashMap<>();
+//        if (principal == null) {
+//            logger.error("Failed to authenticate with Google - principal is null");
+//            response.put("status", "error");
+//            response.put("message", "Đăng nhập Google thất bại. Vui lòng thử lại hoặc kiểm tra quyền truy cập.");
+//            return ResponseEntity.status(401).body(response);
+//        }
+//
+//        logger.info("Successfully authenticated with Google. User email: {}", Optional.ofNullable(principal.getAttribute("email")));
+//        AuthenticateResponse authResponse = userService.handleGoogleLogin(principal);
+//        response.put("status", "success");
+//        response.put("data", authResponse);
+//        return ResponseEntity.ok(response);
+//    }
 }

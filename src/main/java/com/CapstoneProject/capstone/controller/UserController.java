@@ -10,6 +10,7 @@ import com.CapstoneProject.capstone.dto.response.auth.AuthenticateResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.service.IUserService;
+import com.google.firebase.auth.FirebaseAuthException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -86,5 +87,11 @@ public class UserController {
     public ResponseEntity<BaseResponse<Boolean>> getUser(@PathVariable UUID id) {
         boolean data = userService.deleteUser(id);
         return ResponseEntity.ok(new BaseResponse<>("200", "Xóa người dùng thành công", data));
+    }
+
+    @PostMapping(UrlConstant.USER.LOGIN_GOOGLE)
+    public ResponseEntity<BaseResponse<AuthenticateResponse>> loginGoogle(@RequestParam String accessToken) throws FirebaseAuthException {
+        AuthenticateResponse data = userService.loginGoogle(accessToken);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Login google successful", data));
     }
 }

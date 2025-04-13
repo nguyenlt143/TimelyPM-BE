@@ -56,7 +56,7 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/register", "/api/user/auth", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/user/register", "/api/user/auth", "/api/user/google-auth/login" ,"/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/user/google-auth/**").permitAll()
                         .requestMatchers("/comment").permitAll()
                         .anyRequest().authenticated()
@@ -64,32 +64,9 @@ public class SecurityConfiguration {
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler(customAccessDeniedHandler)
                         .authenticationEntryPoint(customAuthenticationEntryPoint))
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(auth -> auth.baseUri("/oauth2/authorization"))
-                        .redirectionEndpoint(redir -> redir.baseUri("/api/user/google-auth/signin-google"))
-                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(new OidcUserService() {
-                            @Override
-                            public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
-                                logger.info("Loading OidcUser with access token: {}", userRequest.getAccessToken().getTokenValue());
-                                OidcUser user = super.loadUser(userRequest);
-                                logger.info("Loaded OidcUser attributes: {}", user.getAttributes());
-                                logger.info("User email: {}", Optional.ofNullable(user.getAttribute("email")));
-                                logger.info("User sub: {}", Optional.ofNullable(user.getAttribute("sub")));
-                                return user;
-                            }
-                        }))
-                        .successHandler((request, response, authentication) -> {
-                            logger.info("OAuth2 login success: Principal={}", authentication.getPrincipal());
-                            response.sendRedirect("/api/user/google-auth/success");
-                        })
-                        .failureHandler((request, response, exception) -> {
-                            logger.error("OAuth2 login failed: {}, State={}", exception.getMessage(), request.getParameter("state"), exception);
-                            response.sendRedirect("/api/user/google-auth/login?error=true");
-                        })
-                );
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

@@ -23,6 +23,9 @@ import com.CapstoneProject.capstone.repository.UserProfileRepository;
 import com.CapstoneProject.capstone.repository.UserRepository;
 import com.CapstoneProject.capstone.service.IUserService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -52,6 +55,7 @@ public class UserService implements IUserService {
     private final RoleRepository roleRepository;
     private final UserProfileMapper userProfileMapper;
     private final AppwriteStorageService appwriteStorageService;
+    private final FirebaseAuth firebaseAuth;
 
     @Override
     @Transactional
@@ -223,6 +227,50 @@ public class UserService implements IUserService {
         }
 
         return authenticateUser(user);
+    }
+
+    @Override
+    public AuthenticateResponse loginGoogle(String accessToken) throws FirebaseAuthException {
+        Role role = roleRepository.findByName(RoleEnum.USER);
+        FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(accessToken);
+        if(userRepository.findByEmail(decodedToken.getEmail()).isPresent()){
+            var user = userRepository.findByEmail(decodedToken.getEmail())
+                    .orElseThrow(() ->new NotFoundException("Email Not Found"));
+            var jwtToken = jwtService.generateToken(user);
+            AuthenticateResponse authenticationResponse = new AuthenticateResponse();
+            authenticationResponse.setToken(jwtToken);
+            authenticationResponse.setRole(user.getRole().getName().name());
+            authenticationResponse.setId(user.getId());
+            authenticationResponse.setUsername(user.getUsername());
+            return authenticationResponse;
+        }
+        else {
+            String email = decodedToken.getEmail();
+            String username = email != null ? email.split("@")[0] : "default_user";
+            User user = new User();
+            user.setEmail(email);
+            user.setUsername(username);
+            user.setRole(role);
+            user.setActive(true);
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(user);
+            UserProfile userProfile = new UserProfile();
+            userProfile.setUser(user);
+            userProfile.setFullName(decodedToken.getName());
+            userProfile.setAvatarUrl(decodedToken.getPicture());
+            userProfile.setActive(true);
+            userProfile.setCreatedAt(LocalDateTime.now());
+            userProfile.setUpdatedAt(LocalDateTime.now());
+            userProfileRepository.save(userProfile);
+            var jwtToken = jwtService.generateToken(user);
+            AuthenticateResponse authenticationResponse = new AuthenticateResponse();
+            authenticationResponse.setToken(jwtToken);
+            authenticationResponse.setRole(user.getRole().getName().name());
+            authenticationResponse.setId(user.getId());
+            authenticationResponse.setUsername(user.getUsername());
+            return authenticationResponse;
+        }
     }
 
     private User registerGoogleUser(String email, String name, String picture) {
