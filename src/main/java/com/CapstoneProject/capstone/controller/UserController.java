@@ -94,4 +94,16 @@ public class UserController {
         AuthenticateResponse data = userService.loginGoogle(accessToken);
         return ResponseEntity.ok(new BaseResponse<>("200", "Login google successful", data));
     }
+
+    @PostMapping(UrlConstant.USER.VERIFY_EMAIL)
+    public ResponseEntity<BaseResponse<Boolean>> verifyAccount(@RequestParam String email, @RequestParam Integer otp) {
+        boolean data = userService.verifyAccount(email, otp);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Verify account successful", data));
+    }
+
+    @PostMapping(UrlConstant.USER.RESEND_EMAIL)
+    public ResponseEntity<BaseResponse<Boolean>> resendAccount(@RequestParam String email) {
+        boolean data = userService.resendOtp(email);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Resend otp account successful", data));
+    }
 }

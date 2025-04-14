@@ -56,7 +56,7 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/register", "/api/user/auth", "/api/user/google-auth/login" ,"/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/user/register", "/api/user/auth", "/api/user/verify-email", "/api/user/resend-email", "/api/user/google-auth/login" ,"/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/user/google-auth/**").permitAll()
                         .requestMatchers("/comment").permitAll()
                         .anyRequest().authenticated()

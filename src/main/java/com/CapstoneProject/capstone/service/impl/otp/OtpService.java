@@ -1,5 +1,8 @@
 package com.CapstoneProject.capstone.service.impl.otp;
 
+import com.CapstoneProject.capstone.exception.OTPRetryException;
+import com.CapstoneProject.capstone.exception.ResendOTPException;
+import com.CapstoneProject.capstone.service.IEmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -7,29 +10,25 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OtpService {
     private final OtpGenerate otpGenerator;
-//    private final EmailService emailService;
-//    private final EmailTemplateService emailTemplateService;
+    private final IEmailService emailService;
 
     public void sendOtp(String email) {
-        // Tạo mã OTP
         Integer otp = otpGenerator.generateOTP(email);
-        String subject = "Xác thực OTP";
-        // Gửi OTP qua email
-//        emailService.sendEmail(email, subject, emailTemplateService.buildOtpEmailTemplate(email, otp));
+        emailService.sendVerificationEmail(email, otp);
     }
 
     public void resendOtp(String email) {
         if (otpGenerator.isBlocked(email)) {
-            throw new RuntimeException("Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau 5 phút.");
+            throw new ResendOTPException("Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau 5 phút.");
         }
 
-        otpGenerator.clearOTPFromCache(email); // Xóa OTP cũ trước khi tạo OTP mới
-        sendOtp(email); // Gửi OTP mới
+        otpGenerator.clearOTPFromCache(email);
+        sendOtp(email);
     }
 
     public Boolean validateOTP(String key, Integer otpNumber) {
         if (otpGenerator.isBlocked(key)) {
-//            throw new OTPRetryExceptional("Bạn đã nhập sai OTP quá nhiều lần. Vui lòng thử lại sau " + 5 + " phút.");
+            throw new OTPRetryException("Bạn đã nhập sai OTP quá nhiều lần. Vui lòng thử lại sau " + 5 + " phút.");
         }
 
         Integer cacheOTP = otpGenerator.getOTPByKey(key);
@@ -38,7 +37,8 @@ public class OtpService {
             return true;
         }
 
-        otpGenerator.increaseFailedAttempts(key); // Tăng số lần nhập sai
+        otpGenerator.increaseFailedAttempts(key);
         return false;
     }
+
 }

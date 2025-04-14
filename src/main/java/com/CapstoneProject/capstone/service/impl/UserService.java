@@ -22,6 +22,7 @@ import com.CapstoneProject.capstone.repository.RoleRepository;
 import com.CapstoneProject.capstone.repository.UserProfileRepository;
 import com.CapstoneProject.capstone.repository.UserRepository;
 import com.CapstoneProject.capstone.service.IUserService;
+import com.CapstoneProject.capstone.service.impl.otp.OtpService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -55,6 +56,7 @@ public class UserService implements IUserService {
     private final RoleRepository roleRepository;
     private final UserProfileMapper userProfileMapper;
     private final AppwriteStorageService appwriteStorageService;
+    private final OtpService otpService;
     private final FirebaseAuth firebaseAuth;
 
     @Override
@@ -79,9 +81,10 @@ public class UserService implements IUserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        user.setActive(true);
+        user.setActive(false);
         user.setRole(role);
         userRepository.save(user);
+        otpService.sendOtp(user.getEmail());
         UserProfile userProfile = userMapper.toProfile(request.getUserInfo());
         userProfile.setUser(user);
         userProfile.setGender(request.getUserInfo().getGender());
@@ -271,6 +274,28 @@ public class UserService implements IUserService {
             authenticationResponse.setUsername(user.getUsername());
             return authenticationResponse;
         }
+    }
+
+    @Override
+    public Boolean verifyAccount(String email, Integer otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Email không tồn tại!"));
+        boolean isValidOtp = otpService.validateOTP(email, otp);
+        if (isValidOtp) {
+            user.setActive(true);
+            user.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(user);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Boolean resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Email không tồn tại!"));
+        otpService.resendOtp(user.getEmail());
+        return true;
     }
 
     private User registerGoogleUser(String email, String name, String picture) {

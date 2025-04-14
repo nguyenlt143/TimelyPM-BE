@@ -36,6 +36,11 @@ public interface IUserService {
     GetUserResponse updateProfile(UpdateProfileRequest request);
 
     AuthenticateResponse handleGoogleLogin(OAuth2User principal);
+
     AuthenticateResponse loginGoogle(String accessToken) throws FirebaseAuthException;
+
+    Boolean verifyAccount(String email, Integer otp);
+
+    Boolean resendOtp(String email);
 }
 

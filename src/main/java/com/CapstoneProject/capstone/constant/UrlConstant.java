@@ -15,6 +15,8 @@ public class UrlConstant {
         public static final String UPLOAD_AVATAR = "/upload-avatar";
         public static final String UPDATE_PROFILE = "/update-profile";
         public static final String LOGIN_GOOGLE = "/google-auth/login";
+        public static final String VERIFY_EMAIL = "/verify-email";
+        public static final String RESEND_EMAIL = "/resend-email";
     }
 
     public static class PROJECT {

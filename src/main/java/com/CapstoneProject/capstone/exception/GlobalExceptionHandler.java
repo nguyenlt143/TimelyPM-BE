@@ -138,4 +138,24 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(OTPRetryException .class)
+    public ResponseEntity<BaseResponse<?>> OTPRetryException (OTPRetryException  ex) {
+        BaseResponse<?> response = new BaseResponse<>();
+        response.setCode("400");
+        response.setMessage(ex.getMessage());
+        response.setData(null);
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ResendOTPException.class)
+    public ResponseEntity<BaseResponse<?>> ResendOTPException (ResendOTPException ex) {
+        BaseResponse<?> response = new BaseResponse<>();
+        response.setCode("400");
+        response.setMessage(ex.getMessage());
+        response.setData(null);
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
 }

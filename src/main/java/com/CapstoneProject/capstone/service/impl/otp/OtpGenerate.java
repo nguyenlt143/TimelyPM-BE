@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.service.impl.otp;
 
+import com.CapstoneProject.capstone.exception.ResendOTPException;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -53,7 +54,7 @@ public class OtpGenerate {
     public Integer generateOTP(String key) {
         int retries = retryCache.getIfPresent(key) == null ? 0 : retryCache.getIfPresent(key);
         if (retries >= MAX_RETRIES) {
-            throw new RuntimeException("Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau " + RETRY_EXPIRE_MIN + " phút.");
+            throw new ResendOTPException("Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau " + RETRY_EXPIRE_MIN + " phút.");
         }
 
         SecureRandom secureRandom = new SecureRandom();
