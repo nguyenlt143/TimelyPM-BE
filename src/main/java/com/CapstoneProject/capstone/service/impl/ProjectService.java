@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.project.CreateNewProjectRequest;
 import com.CapstoneProject.capstone.dto.request.project.UpdateProjectRequest;
+import com.CapstoneProject.capstone.dto.response.project.ChartDataResponse;
 import com.CapstoneProject.capstone.dto.response.project.CreateNewProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
@@ -21,10 +22,10 @@ import org.springframework.stereotype.Service;
 
 import java.awt.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -89,7 +90,84 @@ public class ProjectService implements IProjectService {
         Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này"));
         GetProjectResponse response = projectMapper.toGetResponse(project);
         response.setUserId(project.getUserProfile().getUser().getId());
+        ChartDataResponse chartData = buildChartData(project);
+        response.setChartData(chartData);
         return response;
+    }
+
+    private ChartDataResponse buildChartData(Project project) {
+        ChartDataResponse chartData = new ChartDataResponse();
+
+        List<Task> allTasks = new ArrayList<>();
+        List<Issue> allIssues = new ArrayList<>();
+        List<Question> allQuestions = new ArrayList<>();
+        Map<Task, Topic> taskToTopic = new HashMap<>();
+        Map<Issue, Topic> issueToTopic = new HashMap<>();
+        Map<Question, Topic> questionToTopic = new HashMap<>();
+
+        for (Topic topic : project.getTopics()) {
+            if (topic.getTasks() != null) {
+                allTasks.addAll(topic.getTasks());
+                topic.getTasks().forEach(task -> taskToTopic.put(task, topic));
+            }
+            if (topic.getIssues() != null) {
+                allIssues.addAll(topic.getIssues());
+                topic.getIssues().forEach(issue -> issueToTopic.put(issue, topic));
+            }
+            if (topic.getQuestions() != null) {
+                allQuestions.addAll(topic.getQuestions());
+                topic.getQuestions().forEach(question -> questionToTopic.put(question, topic));
+            }
+        }
+
+        List<StatusEnum> allStatuses = new ArrayList<>();
+        allTasks.stream()
+                .filter(task -> task.getStatus() != null)
+                .forEach(task -> allStatuses.add(task.getStatus()));
+        allIssues.stream()
+                .filter(issue -> issue.getStatus() != null)
+                .forEach(issue -> allStatuses.add(issue.getStatus()));
+        allQuestions.stream()
+                .filter(question -> question.getStatus() != null)
+                .forEach(question -> allStatuses.add(question.getStatus()));
+
+        Map<String, Long> tasksByStatus = allStatuses.stream()
+                .collect(Collectors.groupingBy(
+                        StatusEnum::name,
+                        Collectors.counting()
+                ));
+        chartData.setTasksByStatus(tasksByStatus);
+
+        List<PriorityEnum> allPriorities = new ArrayList<>();
+        allTasks.stream()
+                .filter(task -> task.getPriority() != null)
+                .forEach(task -> allPriorities.add(task.getPriority()));
+        allIssues.stream()
+                .filter(issue -> issue.getPriority() != null)
+                .forEach(issue -> allPriorities.add(issue.getPriority()));
+        allQuestions.stream()
+                .filter(question -> question.getPriority() != null)
+                .forEach(question -> allPriorities.add(question.getPriority()));
+
+        Map<String, Long> priorityDistribution = allPriorities.stream()
+                .collect(Collectors.groupingBy(
+                        PriorityEnum::name,
+                        Collectors.counting()
+                ));
+        chartData.setPriorityDistribution(priorityDistribution);
+        long totalTasks = allTasks.size() + allIssues.size() + allQuestions.size();
+        long pendingTasks = tasksByStatus.getOrDefault("PENDING", 0L);
+        long toDoTasks = tasksByStatus.getOrDefault("TODO", 0L);
+        long progressTasks = tasksByStatus.getOrDefault("INPROGRESS", 0L);
+        long doneTasks = tasksByStatus.getOrDefault("DONE", 0L);
+
+        chartData.setTotalTasks(totalTasks);
+        chartData.setPendingTasks(pendingTasks);
+        chartData.setToDoTasks(toDoTasks);
+        chartData.setProgressTasks(progressTasks);
+        chartData.setDoneTasks(doneTasks);
+
+        return chartData;
     }
 
     @Override

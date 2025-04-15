@@ -24,6 +24,7 @@ public class GetProjectResponse {
     private String status;
     private String code;
     private GetProfileResponse profile;
+    private ChartDataResponse chartData;
 
     private UUID userId;
     private List<GetTopicResponse> topics;
