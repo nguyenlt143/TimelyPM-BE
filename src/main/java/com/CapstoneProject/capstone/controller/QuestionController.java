@@ -5,7 +5,6 @@ import com.CapstoneProject.capstone.dto.request.question.CreateNewQuestionReques
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.question.CreateNewQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.question.GetQuestionResponse;
-import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.service.IQuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

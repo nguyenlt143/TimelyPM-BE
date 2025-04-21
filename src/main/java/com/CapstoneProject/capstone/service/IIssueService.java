@@ -4,7 +4,6 @@ import com.CapstoneProject.capstone.dto.request.issue.CreateNewIssueRequest;
 import com.CapstoneProject.capstone.dto.request.issue.UpdateIssueRequest;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
-import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

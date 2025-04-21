@@ -6,6 +6,7 @@ import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.model.Project;
 import com.CapstoneProject.capstone.model.ProjectActivityLog;
 import com.CapstoneProject.capstone.model.ProjectMember;
+import com.CapstoneProject.capstone.model.User;
 import com.CapstoneProject.capstone.repository.ProjectActivityLogRepository;
 import com.CapstoneProject.capstone.repository.ProjectMemberRepository;
 import com.CapstoneProject.capstone.repository.ProjectRepository;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -28,10 +28,12 @@ public class ProjectActivityLogService implements IProjectActivityLogService {
     private final ProjectMemberRepository projectMemberRepository;
 
     @Override
-    public void logActivity(Project project, ActivityTypeEnum activityType) {
+    public void logActivity(Project project, User user, ActivityTypeEnum activityType, String content) {
         ProjectActivityLog log = new ProjectActivityLog();
         log.setActivityType(activityType);
         log.setProject(project);
+        log.setContent(content);
+        log.setCreateBy(user);
         log.setActive(true);
         log.setCreatedAt(LocalDateTime.now());
         log.setUpdatedAt(LocalDateTime.now());
@@ -51,6 +53,8 @@ public class ProjectActivityLogService implements IProjectActivityLogService {
         List<GetProjectLogResponse> responses = projectActivityLogs.stream().map(projectActivityLog -> {
             GetProjectLogResponse response = new GetProjectLogResponse();
             response.setActivityType(projectActivityLog.getActivityType());
+            response.setEmail(projectActivityLog.getCreateBy().getEmail());
+            response.setContent(projectActivityLog.getContent());
             response.setUpdateTime(projectActivityLog.getUpdatedAt());
             return response;
         }).collect(Collectors.toList());

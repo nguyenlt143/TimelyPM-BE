@@ -5,9 +5,6 @@ import com.CapstoneProject.capstone.dto.request.project.UpdateProjectRequest;
 import com.CapstoneProject.capstone.dto.response.project.CreateNewProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
-import com.CapstoneProject.capstone.dto.response.projectMember.GetMemberPendingRespone;
-import com.CapstoneProject.capstone.enums.MemberStatusEnum;
-import com.CapstoneProject.capstone.enums.RoleEnum;
 
 import java.util.List;
 import java.util.UUID;

@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.controller;
 
 import com.CapstoneProject.capstone.constant.UrlConstant;
 import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
+import com.CapstoneProject.capstone.dto.request.auth.ChangeForgotPasswordRequest;
 import com.CapstoneProject.capstone.dto.request.auth.ChangePasswordRequest;
 import com.CapstoneProject.capstone.dto.request.auth.UpdateProfileRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
@@ -11,15 +12,10 @@ import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.dto.response.user.RegisterResponse;
 import com.CapstoneProject.capstone.service.IUserService;
 import com.google.firebase.auth.FirebaseAuthException;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -95,6 +91,18 @@ public class UserController {
         return ResponseEntity.ok(new BaseResponse<>("200", "Login google successful", data));
     }
 
+    @PostMapping(UrlConstant.USER.LOGIN_FACEBOOK)
+    public ResponseEntity<BaseResponse<AuthenticateResponse>> loginFacebook(@RequestParam String accessToken) throws FirebaseAuthException {
+        AuthenticateResponse data = userService.loginFacebook(accessToken);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Login facebook successful", data));
+    }
+
+    @PostMapping(UrlConstant.USER.LOGIN_GITHUB)
+    public ResponseEntity<BaseResponse<AuthenticateResponse>> loginGithub(@RequestParam String accessToken) throws FirebaseAuthException {
+        AuthenticateResponse data = userService.loginGitHub(accessToken);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Login github successful", data));
+    }
+
     @PostMapping(UrlConstant.USER.VERIFY_EMAIL)
     public ResponseEntity<BaseResponse<Boolean>> verifyAccount(@RequestParam String email, @RequestParam Integer otp) {
         boolean data = userService.verifyAccount(email, otp);
@@ -105,5 +113,17 @@ public class UserController {
     public ResponseEntity<BaseResponse<Boolean>> resendAccount(@RequestParam String email) {
         boolean data = userService.resendOtp(email);
         return ResponseEntity.ok(new BaseResponse<>("200", "Resend otp account successful", data));
+    }
+
+    @PostMapping(UrlConstant.USER.FORGOT_PASSWORD)
+    public ResponseEntity<BaseResponse<Boolean>> forgotPassword(@RequestParam String email) {
+        boolean data = userService.forgotPassword(email);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Send otp account successful", data));
+    }
+
+    @PostMapping(UrlConstant.USER.CHANGE_FORGOT_PASSWORD)
+    public ResponseEntity<BaseResponse<Boolean>> changeForgotPassword(@RequestBody ChangeForgotPasswordRequest request) {
+        boolean data = userService.changeForgotPassword(request);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Change forgot password successful", data));
     }
 }

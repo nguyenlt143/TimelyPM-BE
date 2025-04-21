@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.service;
 
 import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
+import com.CapstoneProject.capstone.dto.request.auth.ChangeForgotPasswordRequest;
 import com.CapstoneProject.capstone.dto.request.auth.ChangePasswordRequest;
 import com.CapstoneProject.capstone.dto.request.auth.UpdateProfileRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
@@ -39,8 +40,16 @@ public interface IUserService {
 
     AuthenticateResponse loginGoogle(String accessToken) throws FirebaseAuthException;
 
+    AuthenticateResponse loginFacebook(String accessToken) throws FirebaseAuthException;
+
+    AuthenticateResponse loginGitHub(String accessToken) throws FirebaseAuthException;
+
     Boolean verifyAccount(String email, Integer otp);
 
     Boolean resendOtp(String email);
+
+    Boolean forgotPassword(String email);
+
+    Boolean changeForgotPassword(ChangeForgotPasswordRequest request);
 }
 

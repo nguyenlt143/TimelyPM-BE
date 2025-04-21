@@ -6,8 +6,6 @@ import com.CapstoneProject.capstone.dto.response.project.ChartDataResponse;
 import com.CapstoneProject.capstone.dto.response.project.CreateNewProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.dto.response.project.UpdateProjectResponse;
-import com.CapstoneProject.capstone.dto.response.projectMember.GetMemberPendingRespone;
-import com.CapstoneProject.capstone.dto.response.projectMember.GetProjectMemberResponse;
 import com.CapstoneProject.capstone.enums.*;
 import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.ProjectMapper;
@@ -20,12 +18,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,8 +32,8 @@ public class ProjectService implements IProjectService {
     private final UserProfileRepository userProfileRepository;
     private final RoleRepository roleRepository;
     private final ProjectMemberRepository projectMemberRepository;
-    private final ProjectActivityLogRepository projectActivityLogRepository;
     private final IProjectActivityLogService projectActivityLogService;
+    private final UserProfileRepository profileRepository;
 
     @Override
     @Transactional
@@ -63,7 +58,7 @@ public class ProjectService implements IProjectService {
         project.setActive(true);
         projectRepository.save(project);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_PROJECT);
+        projectActivityLogService.logActivity(project, user, ActivityTypeEnum.CREATE_PROJECT, "Create new project successfully");
 
         ProjectMember projectMember = new ProjectMember();
         projectMember.setProject(project);
@@ -177,7 +172,7 @@ public class ProjectService implements IProjectService {
         project.setUpdatedAt(LocalDateTime.now());
         projectRepository.save(project);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.DELETE_PROJECT);
+        projectActivityLogService.logActivity(project, project.getUserProfile().getUser(), ActivityTypeEnum.DELETE_PROJECT, project.getUserProfile().getFullName() + " deleted project " + project.getName() + " successfully");
 
         return true;
     }
@@ -199,7 +194,7 @@ public class ProjectService implements IProjectService {
         project.setUpdatedAt(LocalDateTime.now());
         projectRepository.save(project);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_PROJECT);
+        projectActivityLogService.logActivity(project, project.getUserProfile().getUser(), ActivityTypeEnum.UPDATE_PROJECT, "Updated project " + project.getName() + " successfully");
 
         UpdateProjectResponse response = projectMapper.toUpdateResponse(project);
         return response;
@@ -228,6 +223,9 @@ public class ProjectService implements IProjectService {
 
         User userInvite = userRepository.findByEmail(email).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
 
+        UserProfile profile  = profileRepository.findByUserId(userInvite.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ"));
+
         Optional<ProjectMember> isAlreadyMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userInvite.getId());
         if (isAlreadyMember.isPresent()){
             throw new UserExisted("Người dùng đã là thành viên dự án");
@@ -244,7 +242,7 @@ public class ProjectService implements IProjectService {
         projectMember.setActive(true);
         projectMemberRepository.save(projectMember);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.MEMBER_JOIN);
+        projectActivityLogService.logActivity(project, project.getUserProfile().getUser(), ActivityTypeEnum.MEMBER_JOIN, "Invited " + profile.getFullName() + " successfully ");
 
         return true;
     }
@@ -264,7 +262,7 @@ public class ProjectService implements IProjectService {
 
         projectMemberRepository.delete(isAlreadyMember);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.REMOVE_MEMBER);
+        projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.REMOVE_MEMBER, "Deleted " + project.getName() + " successfully");
 
         return true;
     }
@@ -281,6 +279,7 @@ public class ProjectService implements IProjectService {
     @Override
     public boolean closeProject(UUID id) {
         UUID userId = AuthenUtil.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
 
         Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
 
@@ -293,7 +292,7 @@ public class ProjectService implements IProjectService {
         project.setUpdatedAt(LocalDateTime.now());
         projectRepository.save(project);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CHANGE_STATUS);
+        projectActivityLogService.logActivity(project, user, ActivityTypeEnum.CHANGE_STATUS, "Closed " + project.getName() + " successfully");
 
         return true;
     }
@@ -332,7 +331,7 @@ public class ProjectService implements IProjectService {
         project.setUpdatedAt(LocalDateTime.now());
         projectRepository.save(project);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CHANGE_STATUS);
+        projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.CHANGE_STATUS, "Changed " + project.getName() + " to processing successfully");
 
         return true;
     }

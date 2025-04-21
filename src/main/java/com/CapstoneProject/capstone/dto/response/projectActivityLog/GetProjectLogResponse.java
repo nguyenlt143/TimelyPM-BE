@@ -14,5 +14,7 @@ import java.time.LocalDateTime;
 @Setter
 public class GetProjectLogResponse {
     private ActivityTypeEnum activityType;
+    private String email;
+    private String content;
     private LocalDateTime updateTime;
 }

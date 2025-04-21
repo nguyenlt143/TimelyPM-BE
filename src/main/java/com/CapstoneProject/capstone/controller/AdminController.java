@@ -3,7 +3,6 @@ package com.CapstoneProject.capstone.controller;
 import com.CapstoneProject.capstone.constant.UrlConstant;
 import com.CapstoneProject.capstone.dto.response.BaseResponse;
 import com.CapstoneProject.capstone.dto.response.dashboard.GetDashboardResponse;
-import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.project.GetProjectResponse;
 import com.CapstoneProject.capstone.service.IDashboardService;
 import com.CapstoneProject.capstone.service.IProjectService;

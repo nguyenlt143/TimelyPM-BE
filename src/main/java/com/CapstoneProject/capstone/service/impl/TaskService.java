@@ -22,11 +22,9 @@ import com.CapstoneProject.capstone.service.ITaskService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import com.google.api.services.drive.Drive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.plugins.bmp.BMPImageWriteParam;
 import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDateTime;
@@ -123,12 +121,13 @@ public class TaskService implements ITaskService {
         task.setStatus(StatusEnum.PENDING);
         taskRepository.save(task);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_TASK);
-
         User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);
         UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
+
+        projectActivityLogService.logActivity(project, user, ActivityTypeEnum.CREATE_TASK, userProfile.getFullName() + " created new task successfully");
+
         userResponse.setProfile(profileResponse);
         CreateNewTaskResponse createNewTaskResponse = taskMapper.toResponse(task);
         createNewTaskResponse.setAttachment(url.getFileUrl());
@@ -429,16 +428,25 @@ public class TaskService implements ITaskService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
 
         UUID userId = AuthenUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
         if (pmUserOpt.isEmpty() || !pmUserOpt.get().getId().equals(userId)) {
             throw new ForbiddenException("Bạn không có quyền xóa task này");
         }
+
+        UserProfile profile = profileRepository.findByUserId(pmUserOpt.get().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
         task.setActive(false);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.DELETE_TASK);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.DELETE_TASK, profileCurrentUser.getFullName() + " deleted " + task.getLabel());
 
         return true;
     }
@@ -459,6 +467,12 @@ public class TaskService implements ITaskService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
 
         UUID userId = AuthenUtil.getCurrentUserId();
+
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
 
@@ -502,7 +516,7 @@ public class TaskService implements ITaskService {
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_TASK);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_TASK, profileCurrentUser.getFullName() + " updated " + task.getLabel());
 
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
         taskResponse.setUser(creatorResponse);
@@ -546,6 +560,13 @@ public class TaskService implements ITaskService {
 
         UUID userId = AuthenUtil.getCurrentUserId();
 
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
+
         ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
 
         boolean isReporter = (task.getReporter() != null && task.getReporter().getUser() != null)
@@ -577,7 +598,7 @@ public class TaskService implements ITaskService {
         issue.setCreatedBy(task.getReporter());
         issueRepository.save(issue);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_ISSUE);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.CREATE_ISSUE, profileCurrentUser.getFullName() + " created " + issue.getLabel());
 
         User creator = userRepository.findById(issue.getCreatedBy().getUser().getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo issue"));
@@ -622,6 +643,13 @@ public class TaskService implements ITaskService {
     @Override
     public GetTaskResponse updateTask(UUID id, UUID projectId, UUID topicId, UpdateTaskRequest request) {
         UUID userId = AuthenUtil.getCurrentUserId();
+
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
         Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này"));
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Không tìm thấy Project Manager"));
         if(!pmUser.getId().equals(userId)){
@@ -653,7 +681,7 @@ public class TaskService implements ITaskService {
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_TASK);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_TASK, profileCurrentUser.getFullName() + " updated " + task.getLabel());
 
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
 

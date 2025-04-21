@@ -32,6 +32,7 @@ public class ProjectMemberService implements IProjectMemberService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final IProjectActivityLogService projectActivityLogService;
+    private final UserProfileRepository profileRepository;
 
     @Override
     public List<GetProjectMemberResponse> getProjectMembers(UUID projectId) {
@@ -85,9 +86,13 @@ public class ProjectMemberService implements IProjectMemberService {
             projectmember.setRole(roleUser);
             projectmember.setUpdatedAt(LocalDateTime.now());
 
-            projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_MODULE);
-
             projectMemberRepository.save(projectmember);
+
+            UserProfile profile = profileRepository.findByUserId(projectmember.getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
+            projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.ACCEPT_MEMBER, "Accepted " + profile.getFullName());
+
             return true;
         }else{
             ProjectMember projectmember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.PENDING.name()).orElseThrow(() -> new NotFoundException("Không tìm thấy đơn của người này"));

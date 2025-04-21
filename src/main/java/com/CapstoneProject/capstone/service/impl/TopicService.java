@@ -6,7 +6,6 @@ import com.CapstoneProject.capstone.dto.response.topic.CreateNewTopicResponse;
 import com.CapstoneProject.capstone.dto.response.topic.GetTopicResponse;
 import com.CapstoneProject.capstone.dto.response.topic.UpdateTopicResponse;
 import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
-import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.CapstoneProject.capstone.enums.TopicTypeEnum;
 import com.CapstoneProject.capstone.exception.ForbiddenException;
@@ -36,6 +35,7 @@ public class TopicService implements ITopicService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final IProjectActivityLogService projectActivityLogService;
+    private final UserProfileRepository profileRepository;
 
     @Override
     public CreateNewTopicResponse createNewTopic(CreateNewTopicRequest request) {
@@ -50,6 +50,9 @@ public class TopicService implements ITopicService {
         if(!pmUser.getId().equals(userId)){
             throw new ForbiddenException("Bạn không có quyền");
         }
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(pmUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         TopicTypeEnum topicTypeEnum;
         try {
@@ -70,7 +73,7 @@ public class TopicService implements ITopicService {
         topic.setUpdatedAt(LocalDateTime.now());
         topicRepository.save(topic);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_MODULE);
+        projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.CREATE_MODULE, profileCurrentUser.getFullName() + " created " + topic.getLabels());
 
         return topicMapper.toResponse(topic);
     }
@@ -100,6 +103,10 @@ public class TopicService implements ITopicService {
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
         UUID userId = AuthenUtil.getCurrentUserId();
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
+
+        UserProfile profile = profileRepository.findByUserId(pmUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ"));
+
         if(!pmUser.getId().equals(userId)){
             throw new ForbiddenException("Bạn không có quyền");
         }
@@ -108,7 +115,7 @@ public class TopicService implements ITopicService {
         topic.setUpdatedAt(LocalDateTime.now());
         topicRepository.save(topic);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.DELETE_MODULE);
+        projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.DELETE_MODULE, profile.getFullName() + " deleted " + topic.getLabels());
 
         return true;
     }
@@ -126,6 +133,10 @@ public class TopicService implements ITopicService {
         }
         UUID userId = AuthenUtil.getCurrentUserId();
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
+
+        UserProfile profile = profileRepository.findByUserId(pmUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ"));
+
         if(!pmUser.getId().equals(userId)){
             throw new ForbiddenException("Bạn không có quyền");
         }
@@ -146,7 +157,7 @@ public class TopicService implements ITopicService {
         }
         topicRepository.save(topic);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_MODULE);
+        projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.UPDATE_MODULE, profile.getFullName() + " updated " + topic.getLabels());
 
         UpdateTopicResponse response = new UpdateTopicResponse();
         response.setType(topic.getType().toUpperCase());

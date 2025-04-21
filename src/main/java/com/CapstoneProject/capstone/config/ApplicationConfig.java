@@ -1,6 +1,5 @@
 package com.CapstoneProject.capstone.config;
 
-import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

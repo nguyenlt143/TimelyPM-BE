@@ -1,7 +1,6 @@
 package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.question.CreateNewQuestionRequest;
-import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.question.CreateNewQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.question.GetQuestionResponse;
@@ -55,6 +54,12 @@ public class QuestionService implements IQuestionService {
         }
 
         UUID userId = AuthenUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
 
         ProjectMember pmUser = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
 
@@ -97,7 +102,7 @@ public class QuestionService implements IQuestionService {
         question.setTopic(topic);
         questionRepository.save(question);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_QUESTION);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.CREATE_QUESTION, profileCurrentUser.getFullName() + " created " + question.getLabel());
 
         User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);

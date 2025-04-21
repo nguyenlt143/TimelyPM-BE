@@ -6,7 +6,6 @@ import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
-import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
 import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
@@ -74,6 +73,11 @@ public class IssueService implements IIssueService {
         }
 
         UUID userId = AuthenUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         List<User> pmUsers = userRepository.findUsersWithRolePMOrQAByProjectId(projectId);
         User currentPM = pmUsers.stream()
@@ -127,11 +131,12 @@ public class IssueService implements IIssueService {
         issue.setTopic(topic);
         issueRepository.save(issue);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.CREATE_ISSUE);
-
         User user = userRepository.findById(assignee.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
-        GetUserResponse userResponse = userMapper.getUserResponse(user);
         UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
+
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.CREATE_ISSUE, profileCurrentUser.getFullName() + " created new issue successfully");
+
+        GetUserResponse userResponse = userMapper.getUserResponse(user);
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
         userResponse.setProfile(profileResponse);
         CreateNewIssueResponse response = new CreateNewIssueResponse();
@@ -474,6 +479,10 @@ public class IssueService implements IIssueService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy issue"));
 
         UUID userId = AuthenUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        UserProfile profile = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ"));
 
         Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
         boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
@@ -499,12 +508,14 @@ public class IssueService implements IIssueService {
         creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
 
         GetUserResponse assigneeResponse = null;
+        UserProfile assigneeProfile = null;
+        User assignee = null;
         if (issue.getAssignee() != null && issue.getAssignee().getUser() != null) {
-            User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+             assignee = userRepository.findById(issue.getAssignee().getUser().getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao issue"));
 
             assigneeResponse = userMapper.getUserResponse(assignee);
-            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+            assigneeProfile = profileRepository.findByUserId(assignee.getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao issue"));
 
             assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
@@ -514,7 +525,7 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issueRepository.save(issue);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_ISSUE);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_ISSUE, profile.getFullName() + " updated " + issue.getLabel() + " successfully");
 
         Drive driveService = googleDriveService.getDriveService();
         String fileId = googleDriveService.extractFileId(issue.getAttachment());
@@ -556,6 +567,11 @@ public class IssueService implements IIssueService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy issue"));
 
         UUID userId = AuthenUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profile = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         boolean isPM = userRepository.findUserWithRolePMByProjectId(projectId)
                 .map(pmUser -> pmUser.getId().equals(userId))
@@ -575,7 +591,7 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issueRepository.save(issue);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.DELETE_ISSUE);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.DELETE_ISSUE, profile.getFullName() + " deleted " + issue.getLabel() + " successfully");
 
         return true;
     }
@@ -583,6 +599,11 @@ public class IssueService implements IIssueService {
     @Override
     public GetIssueResponse UpdateIssue(UUID id, UUID projectId, UUID topicId, UpdateIssueRequest request) {
         UUID userId = AuthenUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        UserProfile profile = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ"));
+
         Project project = projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này"));
         User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Không tìm thấy Project Manager"));
         if(!pmUser.getId().equals(userId)){
@@ -625,7 +646,7 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issueRepository.save(issue);
 
-        projectActivityLogService.logActivity(project, ActivityTypeEnum.UPDATE_ISSUE);
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_ISSUE, profile.getFullName() + " updated issue " + issue.getLabel() + " successfully");
 
         GetIssueResponse issueResponse = new GetIssueResponse();
         issueResponse.setId(issue.getId());

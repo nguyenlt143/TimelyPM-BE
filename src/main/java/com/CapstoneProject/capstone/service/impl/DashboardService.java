@@ -1,7 +1,6 @@
 package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.response.dashboard.GetDashboardResponse;
-import com.CapstoneProject.capstone.enums.ProjectStatusEnum;
 import com.CapstoneProject.capstone.repository.ProjectRepository;
 import com.CapstoneProject.capstone.repository.UserRepository;
 import com.CapstoneProject.capstone.service.IDashboardService;

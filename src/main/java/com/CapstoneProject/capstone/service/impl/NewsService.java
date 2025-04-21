@@ -9,7 +9,6 @@ import com.CapstoneProject.capstone.repository.NewsRepository;
 import com.CapstoneProject.capstone.service.INewsService;
 import com.CapstoneProject.capstone.util.HtmlSanitizerUtil;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

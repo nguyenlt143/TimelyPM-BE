@@ -1,6 +1,7 @@
 package com.CapstoneProject.capstone.service.impl;
 
 import com.CapstoneProject.capstone.dto.request.auth.AuthenticateRequest;
+import com.CapstoneProject.capstone.dto.request.auth.ChangeForgotPasswordRequest;
 import com.CapstoneProject.capstone.dto.request.auth.ChangePasswordRequest;
 import com.CapstoneProject.capstone.dto.request.auth.UpdateProfileRequest;
 import com.CapstoneProject.capstone.dto.request.user.RegisterRequest;
@@ -161,7 +162,8 @@ public class UserService implements IUserService {
         UUID userId = AuthenUtil.getCurrentUserId();
         User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found!"));
 
-        if (!user.getPassword().equals(passwordEncoder.encode(request.getOldPassword()))) {
+        System.out.println(passwordEncoder.encode(request.getOldPassword()));
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new InformationException("Old password doesn't match!");
         }
 
@@ -234,30 +236,41 @@ public class UserService implements IUserService {
 
     @Override
     public AuthenticateResponse loginGoogle(String accessToken) throws FirebaseAuthException {
-        Role role = roleRepository.findByName(RoleEnum.USER);
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(accessToken);
-        if(userRepository.findByEmail(decodedToken.getEmail()).isPresent()){
-            var user = userRepository.findByEmail(decodedToken.getEmail())
-                    .orElseThrow(() ->new NotFoundException("Email Not Found"));
-            var jwtToken = jwtService.generateToken(user);
-            AuthenticateResponse authenticationResponse = new AuthenticateResponse();
-            authenticationResponse.setToken(jwtToken);
-            authenticationResponse.setRole(user.getRole().getName().name());
-            authenticationResponse.setId(user.getId());
-            authenticationResponse.setUsername(user.getUsername());
-            return authenticationResponse;
-        }
-        else {
-            String email = decodedToken.getEmail();
-            String username = email != null ? email.split("@")[0] : "default_user";
-            User user = new User();
-            user.setEmail(email);
+        return processLogin(decodedToken);
+    }
+
+    @Override
+    public AuthenticateResponse loginFacebook(String accessToken) throws FirebaseAuthException {
+        FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(accessToken);
+        return processLogin(decodedToken);
+    }
+
+    @Override
+    public AuthenticateResponse loginGitHub(String accessToken) throws FirebaseAuthException {
+        FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(accessToken);
+        return processLogin(decodedToken);
+    }
+
+    private AuthenticateResponse processLogin(FirebaseToken decodedToken) throws FirebaseAuthException {
+        Role role = roleRepository.findByName(RoleEnum.USER);
+        String email = decodedToken.getEmail();
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        User user;
+        if (existingUser.isPresent()) {
+            user = existingUser.orElseThrow(() -> new NotFoundException("Email Not Found"));
+        } else {
+            String username = email != null ? email.split("@")[0] : "github_user_" + decodedToken.getUid();
+            user = new User();
+            user.setEmail(email != null ? email : decodedToken.getUid() + "@github.com");
             user.setUsername(username);
             user.setRole(role);
             user.setActive(true);
             user.setCreatedAt(LocalDateTime.now());
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
+
             UserProfile userProfile = new UserProfile();
             userProfile.setUser(user);
             userProfile.setFullName(decodedToken.getName());
@@ -266,14 +279,15 @@ public class UserService implements IUserService {
             userProfile.setCreatedAt(LocalDateTime.now());
             userProfile.setUpdatedAt(LocalDateTime.now());
             userProfileRepository.save(userProfile);
-            var jwtToken = jwtService.generateToken(user);
-            AuthenticateResponse authenticationResponse = new AuthenticateResponse();
-            authenticationResponse.setToken(jwtToken);
-            authenticationResponse.setRole(user.getRole().getName().name());
-            authenticationResponse.setId(user.getId());
-            authenticationResponse.setUsername(user.getUsername());
-            return authenticationResponse;
         }
+
+        String jwtToken = jwtService.generateToken(user);
+        AuthenticateResponse authenticationResponse = new AuthenticateResponse();
+        authenticationResponse.setToken(jwtToken);
+        authenticationResponse.setRole(user.getRole().getName().name());
+        authenticationResponse.setId(user.getId());
+        authenticationResponse.setUsername(user.getUsername());
+        return authenticationResponse;
     }
 
     @Override
@@ -295,6 +309,24 @@ public class UserService implements IUserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Email không tồn tại!"));
         otpService.resendOtp(user.getEmail());
+        return true;
+    }
+
+    @Override
+    public Boolean forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Email không tồn tại!"));
+        otpService.sendOtp(user.getEmail());
+        return true;
+    }
+
+    @Override
+    public Boolean changeForgotPassword(ChangeForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new NotFoundException("Email không tồn tại!"));
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
         return true;
     }
 

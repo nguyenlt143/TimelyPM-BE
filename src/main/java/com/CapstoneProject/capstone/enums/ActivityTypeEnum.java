@@ -16,5 +16,6 @@ public enum ActivityTypeEnum {
     DELETE_MODULE,
     CREATE_QUESTION,
     MEMBER_JOIN,
-    REMOVE_MEMBER
+    REMOVE_MEMBER,
+    ACCEPT_MEMBER
 }

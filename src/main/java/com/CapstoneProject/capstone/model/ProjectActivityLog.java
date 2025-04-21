@@ -16,6 +16,11 @@ import lombok.Setter;
 public class ProjectActivityLog extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private ActivityTypeEnum activityType;
+    private String content;
+    @ManyToOne
+    @JoinColumn(name = "create_by")
+    @JsonIgnore
+    private User createBy;
     @ManyToOne
     @JoinColumn(name = "project_id")
     @JsonIgnore

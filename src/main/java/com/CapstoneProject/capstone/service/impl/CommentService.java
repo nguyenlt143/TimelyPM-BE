@@ -1,6 +1,5 @@
 package com.CapstoneProject.capstone.service.impl;
 
-import com.CapstoneProject.capstone.config.CommentWebSocketHandler;
 import com.CapstoneProject.capstone.dto.request.comment.CreateCommentRequest;
 import com.CapstoneProject.capstone.dto.response.comment.CreateCommentResponse;
 import com.CapstoneProject.capstone.dto.response.comment.GetCommentResponse;
@@ -18,7 +17,6 @@ import com.CapstoneProject.capstone.util.AuthenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
