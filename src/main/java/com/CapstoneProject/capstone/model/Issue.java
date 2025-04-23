@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.model;
 
+import com.CapstoneProject.capstone.enums.IssueStatusEnum;
 import com.CapstoneProject.capstone.enums.PriorityEnum;
 import com.CapstoneProject.capstone.enums.SeverityEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
@@ -30,7 +31,7 @@ public class Issue extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private PriorityEnum priority;
     @Enumerated(EnumType.STRING)
-    private StatusEnum status;
+    private IssueStatusEnum status;
     @ManyToOne
     @JoinColumn(name = "assignee_to")
     @JsonIgnore

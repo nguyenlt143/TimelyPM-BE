@@ -7,10 +7,7 @@ import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
-import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
-import com.CapstoneProject.capstone.enums.PriorityEnum;
-import com.CapstoneProject.capstone.enums.SeverityEnum;
-import com.CapstoneProject.capstone.enums.StatusEnum;
+import com.CapstoneProject.capstone.enums.*;
 import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
@@ -26,10 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -122,7 +116,7 @@ public class IssueService implements IIssueService {
         issue.setCreatedBy(pmMember);
         issue.setStartDate(request.getStartDate());
         issue.setDueDate(request.getDueDate());
-        issue.setStatus(StatusEnum.PENDING);
+        issue.setStatus(IssueStatusEnum.OPEN);
         issue.setPriority(priority);
         issue.setSeverity(severity);
         issue.setActive(true);
@@ -484,19 +478,58 @@ public class IssueService implements IIssueService {
         UserProfile profile = profileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ"));
 
-        Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
-        boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
-        boolean isAssignee = issue.getAssignee().getUser().getId().equals(userId);
+        boolean isAssignee = issue.getAssignee() != null && issue.getAssignee().getUser().getId().equals(userId);
+        boolean isReporter = issue.getReporter().getUser().getId().equals(userId);
 
-        if (!isPM && !isAssignee) {
+        if (!isAssignee && !isReporter) {
             throw new ForbiddenException("Bạn không có quyền cập nhật issue này");
         }
 
-        StatusEnum newStatus;
+        IssueStatusEnum newStatus;
         try {
-            newStatus = StatusEnum.valueOf(status.toUpperCase());
+            newStatus = IssueStatusEnum.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            throw new InvalidEnumException("Trạng thái không hợp lệ! Chỉ chấp nhận OPEN, INPROGRESS, DONE.");
+            throw new InvalidEnumException("Trạng thái không hợp lệ! Các trạng thái hợp lệ: " +
+                    Arrays.toString(IssueStatusEnum.values()));
+        }
+
+        IssueStatusEnum currentStatus = issue.getStatus();
+        boolean isValidTransition = false;
+        List<IssueStatusEnum> assigneeStatuses = Arrays.asList(IssueStatusEnum.NOT_BUG, IssueStatusEnum.FIXED, IssueStatusEnum.PENDING_RETEST);
+
+        if (assigneeStatuses.contains(newStatus) && !isAssignee) {
+            throw new ForbiddenException("Chỉ assignee mới có thể chuyển trạng thái sang " + newStatus);
+        }
+        if (!assigneeStatuses.contains(newStatus) && !isReporter) {
+            throw new ForbiddenException("Chỉ reporter mới có thể chuyển trạng thái sang " + newStatus);
+        }
+
+        switch (currentStatus) {
+            case OPEN:
+            case RE_OPENED:
+                isValidTransition = newStatus == IssueStatusEnum.NOT_BUG || newStatus == IssueStatusEnum.FIXED;
+                break;
+            case FIXED:
+                isValidTransition = newStatus == IssueStatusEnum.PENDING_RETEST;
+                break;
+            case PENDING_RETEST:
+                isValidTransition = newStatus == IssueStatusEnum.RETEST;
+                break;
+            case RETEST:
+                isValidTransition = newStatus == IssueStatusEnum.RE_OPENED || newStatus == IssueStatusEnum.VERIFIED;
+                break;
+            case VERIFIED:
+                isValidTransition = newStatus == IssueStatusEnum.CLOSED;
+                break;
+            case NOT_BUG:
+            case CLOSED:
+                isValidTransition = false;
+                break;
+        }
+
+        if (!isValidTransition) {
+            throw new InvalidEnumException("Chuyển đổi trạng thái không hợp lệ! Từ " + currentStatus +
+                    ", chỉ có thể chuyển sang: " + getAllowedTransitions(currentStatus));
         }
 
         User creator = userRepository.findById(issue.getCreatedBy().getUser().getId())
@@ -511,7 +544,7 @@ public class IssueService implements IIssueService {
         UserProfile assigneeProfile = null;
         User assignee = null;
         if (issue.getAssignee() != null && issue.getAssignee().getUser() != null) {
-             assignee = userRepository.findById(issue.getAssignee().getUser().getId())
+            assignee = userRepository.findById(issue.getAssignee().getUser().getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao issue"));
 
             assigneeResponse = userMapper.getUserResponse(assignee);
@@ -525,11 +558,13 @@ public class IssueService implements IIssueService {
         issue.setUpdatedAt(LocalDateTime.now());
         issueRepository.save(issue);
 
-        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_ISSUE, profile.getFullName() + " updated " + issue.getLabel() + " successfully");
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_ISSUE,
+                profile.getFullName() + " updated status " + issue.getLabel() + " successfully");
 
         Drive driveService = googleDriveService.getDriveService();
         String fileId = googleDriveService.extractFileId(issue.getAttachment());
-        com.google.api.services.drive.model.File file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
+        com.google.api.services.drive.model.File file = driveService.files().get(fileId)
+                .setFields("name, webViewLink, webContentLink").execute();
         GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
         googleDriveResponse.setFileUrl(file.getWebViewLink());
         googleDriveResponse.setFileName(file.getName());
@@ -549,6 +584,24 @@ public class IssueService implements IIssueService {
         issueResponse.setUser(creatorResponse);
         issueResponse.setAssignee(assigneeResponse);
         return issueResponse;
+    }
+
+    private String getAllowedTransitions(IssueStatusEnum currentStatus) {
+        switch (currentStatus) {
+            case OPEN:
+            case RE_OPENED:
+                return "[NOT_BUG, FIXED]";
+            case FIXED:
+                return "[PENDING_RETEST]";
+            case PENDING_RETEST:
+                return "[RETEST]";
+            case RETEST:
+                return "[RE_OPENED, VERIFIED]";
+            case VERIFIED:
+                return "[CLOSED]";
+            default:
+                return "[]";
+        }
     }
 
     @Override

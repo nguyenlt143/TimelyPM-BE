@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
         response.setMessage(ex.getMessage());
         response.setData(null);
 
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(InvalidProjectException.class)

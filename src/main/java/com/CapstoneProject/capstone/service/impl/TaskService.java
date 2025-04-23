@@ -585,7 +585,7 @@ public class TaskService implements ITaskService {
         issue.setAttachment(url.getFileUrl());
         issue.setStartDate(request.getStartDate());
         issue.setDueDate(request.getDueDate());
-        issue.setStatus(StatusEnum.PENDING);
+        issue.setStatus(IssueStatusEnum.OPEN);
         issue.setPriority(priority);
         issue.setSeverity(severity);
         issue.setTopic(topic);
