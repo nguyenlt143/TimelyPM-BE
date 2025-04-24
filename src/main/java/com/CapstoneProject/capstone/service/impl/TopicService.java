@@ -40,8 +40,8 @@ public class TopicService implements ITopicService {
     @Override
     public CreateNewTopicResponse createNewTopic(CreateNewTopicRequest request) {
         Project project = projectRepository.findById(request.getProjectId()).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
-        if (project.getStatus().equals(StatusEnum.DONE.name())){
-            throw new ProjectAlreadyCompletedException("Không thể thêm task mới vì dự án đã kết thúc.");
+        if(project.getStatus().equals(StatusEnum.PENDING.name()) || project.getStatus().equals(StatusEnum.DONE.name())){
+            throw new ProjectAlreadyCompletedException("Không thể thêm module mới vì dự án chưa bắt đầu hoặc đã kết thúc.");
         }
         
         UUID userId = AuthenUtil.getCurrentUserId();

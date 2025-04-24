@@ -49,8 +49,8 @@ public class QuestionService implements IQuestionService {
         }
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
-        if (project.getStatus().equals(StatusEnum.DONE.name())){
-            throw new ProjectAlreadyCompletedException("Không thể thêm task mới vì dự án đã kết thúc.");
+        if(project.getStatus().equals(StatusEnum.PENDING.name()) || project.getStatus().equals(StatusEnum.DONE.name())){
+            throw new ProjectAlreadyCompletedException("Không thể thêm question mới vì dự án chưa bắt đầu hoặc đã kết thúc.");
         }
 
         UUID userId = AuthenUtil.getCurrentUserId();
