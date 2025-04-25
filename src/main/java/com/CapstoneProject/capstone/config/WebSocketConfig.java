@@ -10,14 +10,18 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final CommentWebSocketHandler commentWebSocketHandler;
+    private final NotificationWebSocketHandler notificationWebSocketHandler;
 
-    public WebSocketConfig(CommentWebSocketHandler commentWebSocketHandler) {
+    public WebSocketConfig(CommentWebSocketHandler commentWebSocketHandler, NotificationWebSocketHandler notificationWebSocketHandler) {
         this.commentWebSocketHandler = commentWebSocketHandler;
+        this.notificationWebSocketHandler = notificationWebSocketHandler;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(commentWebSocketHandler, "/comment")
+                .setAllowedOrigins("*");
+        registry.addHandler(notificationWebSocketHandler, "/notification")
                 .setAllowedOrigins("*");
     }
 }

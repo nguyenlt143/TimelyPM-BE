@@ -67,7 +67,7 @@ public class ProjectController {
         return ResponseEntity.ok(new BaseResponse<>("200", "Tìm dự án thành công", response));
     }
 
-    @PreAuthorize("hasAuthority('USER')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping(UrlConstant.PROJECT.GET_PROJECTS)
     public ResponseEntity<BaseResponse<List<GetProjectResponse>>> getProjects() {
         List<GetProjectResponse> response = projectService.getAllProjects();

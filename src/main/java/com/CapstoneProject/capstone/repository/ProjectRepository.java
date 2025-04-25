@@ -36,6 +36,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
         JOIN project_member pm ON p.id = pm.project_id
         WHERE pm.user_id = :userId
         AND pm.status = 'APPROVED'
+        AND p.active = true
         """, nativeQuery = true)
     List<Project> getApprovedProjectsByUserId(@Param("userId") UUID userId);
 }

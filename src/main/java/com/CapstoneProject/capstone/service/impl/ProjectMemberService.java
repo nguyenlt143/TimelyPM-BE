@@ -33,6 +33,7 @@ public class ProjectMemberService implements IProjectMemberService {
     private final UserRepository userRepository;
     private final IProjectActivityLogService projectActivityLogService;
     private final UserProfileRepository profileRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public List<GetProjectMemberResponse> getProjectMembers(UUID projectId) {
@@ -68,6 +69,9 @@ public class ProjectMemberService implements IProjectMemberService {
             throw new ForbiddenException("Bạn không có quyền");
         }
 
+        UserProfile pmProfile = profileRepository.findByUserId(pmUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
         Optional<ProjectMember> isAlreadyMember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.APPROVED.name());
         if(isAlreadyMember.isPresent()){
             throw new UserExisted("Người dùng đã là thành viên dự án");
@@ -93,12 +97,37 @@ public class ProjectMemberService implements IProjectMemberService {
 
             projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.ACCEPT_MEMBER, "Accepted " + profile.getFullName());
 
+            Notification notification = new Notification();
+            notification.setMessage(String.format("Bạn đã được %s chấp nhận vào %s",
+                    pmProfile.getFullName(),
+                    project.getName()));
+            notification.setRead(false);
+            notification.setUser(projectmember.getUser());
+            notification.setProject(project);
+            notification.setActive(true);
+            notification.setCreatedAt(LocalDateTime.now());
+            notification.setUpdatedAt(LocalDateTime.now());
+            notificationRepository.save(notification);
+
             return true;
         }else{
             ProjectMember projectmember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.PENDING.name()).orElseThrow(() -> new NotFoundException("Không tìm thấy đơn của người này"));
             projectmember.setStatus(memberStatus);
             projectmember.setUpdatedAt(LocalDateTime.now());
             projectMemberRepository.save(projectmember);
+
+            Notification notification = new Notification();
+            notification.setMessage(String.format("Bạn đã bị %s từ chối đơn xin vào %s",
+                    pmProfile.getFullName(),
+                    project.getName()));
+            notification.setRead(false);
+            notification.setUser(projectmember.getUser());
+            notification.setProject(project);
+            notification.setActive(true);
+            notification.setCreatedAt(LocalDateTime.now());
+            notification.setUpdatedAt(LocalDateTime.now());
+            notificationRepository.save(notification);
+
             return true;
         }
 
