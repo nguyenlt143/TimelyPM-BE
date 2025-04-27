@@ -6,6 +6,7 @@ import com.CapstoneProject.capstone.dto.request.task.UpdateTaskRequest;
 import com.CapstoneProject.capstone.dto.response.file.GoogleDriveResponse;
 import com.CapstoneProject.capstone.dto.response.issue.CreateNewIssueByTaskResponse;
 import com.CapstoneProject.capstone.dto.response.issue.GetIssueResponse;
+import com.CapstoneProject.capstone.dto.response.notification.GetNotificationResponse;
 import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.task.CreateNewTaskResponse;
 import com.CapstoneProject.capstone.dto.response.task.GetTaskResponse;
@@ -17,6 +18,7 @@ import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
+import com.CapstoneProject.capstone.service.INotificationService;
 import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.ITaskService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
@@ -28,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,6 +52,8 @@ public class TaskService implements ITaskService {
     private final GoogleDriveService googleDriveService;
     private final FileRepository fileRepository;
     private final IProjectActivityLogService projectActivityLogService;
+    private final NotificationRepository notificationRepository;
+    private final INotificationService notificationService;
 
     @Override
     public CreateNewTaskResponse createNewTask(UUID projectId, UUID topicId, CreateNewTaskRequest request, MultipartFile file) throws IOException {
@@ -120,6 +125,35 @@ public class TaskService implements ITaskService {
         task.setActive(true);
         task.setStatus(StatusEnum.PENDING);
         taskRepository.save(task);
+
+        UserProfile pmProfile = profileRepository.findByUserId(pmUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+        User assigneeUser = userRepository.findById(projectMember.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng assignee"));
+        User reporterUser = userRepository.findById(reporter.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng reporter"));
+
+        Notification assigneeNotification = new Notification();
+        assigneeNotification.setMessage(String.format("Bạn được giao task mới '%s' bởi %s trong dự án %s",
+                taskLabel, pmProfile.getFullName(), project.getName()));
+        assigneeNotification.setRead(false);
+        assigneeNotification.setUser(assigneeUser);
+        assigneeNotification.setProject(project);
+        assigneeNotification.setActive(true);
+        assigneeNotification.setCreatedAt(LocalDateTime.now());
+        assigneeNotification.setUpdatedAt(LocalDateTime.now());
+        notificationService.createNotification(assigneeNotification);
+
+        Notification reporterNotification = new Notification();
+        reporterNotification.setMessage(String.format("Task mới '%s' được tạo bởi %s trong dự án %s, bạn là reporter",
+                taskLabel, pmProfile.getFullName(), project.getName()));
+        reporterNotification.setRead(false);
+        reporterNotification.setUser(reporterUser);
+        reporterNotification.setProject(project);
+        reporterNotification.setActive(true);
+        reporterNotification.setCreatedAt(LocalDateTime.now());
+        reporterNotification.setUpdatedAt(LocalDateTime.now());
+        notificationService.createNotification(reporterNotification);
 
         User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse userResponse = userMapper.getUserResponse(user);

@@ -120,4 +120,9 @@ public class UrlConstant {
         public static final String GET_ALL = "/{projectId}";
     }
 
+    public static class NOTIFICATION {
+        public static final String NOTIFICATION = API + "/notification";
+        public static final String GET_ALL = "";
+    }
+
 }

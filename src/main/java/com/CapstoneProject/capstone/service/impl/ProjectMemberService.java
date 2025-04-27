@@ -1,5 +1,6 @@
 package com.CapstoneProject.capstone.service.impl;
 
+import com.CapstoneProject.capstone.dto.response.notification.GetNotificationResponse;
 import com.CapstoneProject.capstone.dto.response.projectMember.GetMemberPendingRespone;
 import com.CapstoneProject.capstone.dto.response.projectMember.GetProjectMemberResponse;
 import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
@@ -11,6 +12,7 @@ import com.CapstoneProject.capstone.exception.NotFoundException;
 import com.CapstoneProject.capstone.exception.UserExisted;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
+import com.CapstoneProject.capstone.service.INotificationService;
 import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.IProjectMemberService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
@@ -34,6 +36,7 @@ public class ProjectMemberService implements IProjectMemberService {
     private final IProjectActivityLogService projectActivityLogService;
     private final UserProfileRepository profileRepository;
     private final NotificationRepository notificationRepository;
+    private final INotificationService notificationService;
 
     @Override
     public List<GetProjectMemberResponse> getProjectMembers(UUID projectId) {
@@ -62,10 +65,12 @@ public class ProjectMemberService implements IProjectMemberService {
     public boolean updateProjectMemberStatus(UUID projectId, UUID id, String role, MemberStatusEnum memberStatus) {
         UUID userId = AuthenUtil.getCurrentUserId();
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án này."));
 
-        User pmUser = userRepository.findUserWithRolePMByProjectId(projectId).orElseThrow(()-> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
-        if(!pmUser.getId().equals(userId)){
+        User pmUser = userRepository.findUserWithRolePMByProjectId(projectId)
+                .orElseThrow(() -> new NotFoundException("Bạn không có quyền hoặc không tồn tại"));
+        if (!pmUser.getId().equals(userId)) {
             throw new ForbiddenException("Bạn không có quyền");
         }
 
@@ -73,9 +78,23 @@ public class ProjectMemberService implements IProjectMemberService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         Optional<ProjectMember> isAlreadyMember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.APPROVED.name());
-        if(isAlreadyMember.isPresent()){
+        if (isAlreadyMember.isPresent()) {
             throw new UserExisted("Người dùng đã là thành viên dự án");
         }
+
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.PENDING.name())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn của người này"));
+
+        UserProfile memberProfile = profileRepository.findByUserId(projectMember.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
+        Notification notification = new Notification();
+        notification.setUser(projectMember.getUser());
+        notification.setProject(project);
+        notification.setRead(false);
+        notification.setActive(true);
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setUpdatedAt(LocalDateTime.now());
 
         if (memberStatus == MemberStatusEnum.APPROVED) {
             RoleEnum roleEnum;
@@ -85,52 +104,25 @@ public class ProjectMemberService implements IProjectMemberService {
                 throw new InvalidEnumException("Vai trò không hợp lệ, chỉ được QA, DEV");
             }
             Role roleUser = roleRepository.findByName(roleEnum);
-            ProjectMember projectmember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.PENDING.name()).orElseThrow(() -> new NotFoundException("Không tìm thấy đơn của người này"));
-            projectmember.setStatus(memberStatus);
-            projectmember.setRole(roleUser);
-            projectmember.setUpdatedAt(LocalDateTime.now());
 
-            projectMemberRepository.save(projectmember);
+            projectMember.setStatus(memberStatus);
+            projectMember.setRole(roleUser);
+            projectMember.setUpdatedAt(LocalDateTime.now());
+            projectMemberRepository.save(projectMember);
 
-            UserProfile profile = profileRepository.findByUserId(projectmember.getUser().getId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+            projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.ACCEPT_MEMBER, "Accepted " + memberProfile.getFullName());
 
-            projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.ACCEPT_MEMBER, "Accepted " + profile.getFullName());
+            notification.setMessage(String.format("Bạn đã được %s chấp nhận vào %s", pmProfile.getFullName(), project.getName()));
+        } else {
+            projectMember.setStatus(memberStatus);
+            projectMember.setUpdatedAt(LocalDateTime.now());
+            projectMemberRepository.save(projectMember);
 
-            Notification notification = new Notification();
-            notification.setMessage(String.format("Bạn đã được %s chấp nhận vào %s",
-                    pmProfile.getFullName(),
-                    project.getName()));
-            notification.setRead(false);
-            notification.setUser(projectmember.getUser());
-            notification.setProject(project);
-            notification.setActive(true);
-            notification.setCreatedAt(LocalDateTime.now());
-            notification.setUpdatedAt(LocalDateTime.now());
-            notificationRepository.save(notification);
-
-            return true;
-        }else{
-            ProjectMember projectmember = projectMemberRepository.findByProjectIdAndMemberId(projectId, id, MemberStatusEnum.PENDING.name()).orElseThrow(() -> new NotFoundException("Không tìm thấy đơn của người này"));
-            projectmember.setStatus(memberStatus);
-            projectmember.setUpdatedAt(LocalDateTime.now());
-            projectMemberRepository.save(projectmember);
-
-            Notification notification = new Notification();
-            notification.setMessage(String.format("Bạn đã bị %s từ chối đơn xin vào %s",
-                    pmProfile.getFullName(),
-                    project.getName()));
-            notification.setRead(false);
-            notification.setUser(projectmember.getUser());
-            notification.setProject(project);
-            notification.setActive(true);
-            notification.setCreatedAt(LocalDateTime.now());
-            notification.setUpdatedAt(LocalDateTime.now());
-            notificationRepository.save(notification);
-
-            return true;
+            notification.setMessage(String.format("Bạn đã bị %s từ chối đơn xin vào %s", pmProfile.getFullName(), project.getName()));
         }
+        notificationService.createNotification(notification);
 
+        return true;
     }
 
     @Override

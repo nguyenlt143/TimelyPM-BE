@@ -55,6 +55,7 @@ public class SecurityConfiguration {
                                 "/api/user/change-forgot-password", "/api/user/github-auth/login", "/api/user/facebook-auth/login").permitAll()
                         .requestMatchers("/api/user/google-auth/**").permitAll()
                         .requestMatchers("/comment").permitAll()
+                        .requestMatchers("/notification").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
