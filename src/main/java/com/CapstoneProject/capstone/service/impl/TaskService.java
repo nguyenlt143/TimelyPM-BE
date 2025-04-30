@@ -22,17 +22,22 @@ import com.CapstoneProject.capstone.service.INotificationService;
 import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.ITaskService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
+import com.google.api.client.googleapis.batch.BatchRequest;
+import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
+import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.services.drive.Drive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.http.HttpHeaders;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -171,49 +176,153 @@ public class TaskService implements ITaskService {
     }
 
     @Override
-    public List<GetTaskResponse> getTasks(UUID projectId, UUID topicId) {
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+    public List<GetTaskResponse> getTasks(UUID projectId, UUID topicId) throws IOException {
+        // Kiểm tra project và member
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
         UUID userId = AuthenUtil.getCurrentUserId();
+        projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new NotFoundException("Bạn không phải thành viên của project này"));
 
-        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
-
-        Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
-        if(!topic.getProject().getId().equals(project.getId())){
+        // Kiểm tra topic
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+        if (!topic.getProject().getId().equals(project.getId())) {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
+        // Lấy tasks
         List<Task> tasks = taskRepository.findByTopicId(topicId);
+
+        // Thu thập userId từ Task
+        Set<UUID> userIds = tasks.stream()
+                .flatMap(task -> Stream.of(
+                        task.getCreatedBy().getUser().getId(),
+                        task.getAssignee().getUser().getId(),
+                        task.getReporter().getUser().getId()))
+                .collect(Collectors.toSet());
+
+        // Lấy tất cả User và UserProfile theo lô
+        Map<UUID, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        Map<UUID, UserProfile> profileMap = profileRepository.findAllByUserIdIn(userIds).stream()
+                .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
+
+        // Lấy taskId
+        List<UUID> taskIds = tasks.stream().map(Task::getId).collect(Collectors.toList());
+
+        // Lấy tất cả Issue theo lô
+        List<Issue> issues = issueRepository.findByTaskIds(taskIds);
+        Map<UUID, List<Issue>> issuesByTaskId = issues.stream()
+                .collect(Collectors.groupingBy(issue -> issue.getTask().getId()));
+
+        // Thu thập userId từ Issue
+        issues.forEach(issue -> {
+            userIds.add(issue.getAssignee().getUser().getId());
+            userIds.add(issue.getReporter().getUser().getId());
+            userIds.add(issue.getCreatedBy().getUser().getId());
+        });
+
+        // Lấy User và UserProfile bổ sung cho Issue
+        userMap.putAll(userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user)));
+        profileMap.putAll(profileRepository.findAllByUserIdIn(userIds).stream()
+                .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile)));
+
+        // Lấy tất cả File theo lô
+        List<File> files = fileRepository.findByTaskIds(taskIds);
+        Map<UUID, List<File>> filesByTaskId = files.stream()
+                .collect(Collectors.groupingBy(file -> file.getTask().getId()));
+
+        // Lấy Google Drive metadata theo lô
+        Drive driveService;
+        try {
+            driveService = googleDriveService.getDriveService();
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi khởi tạo Google Drive service", e);
+        }
+        BatchRequest batch = driveService.batch();
+        Map<String, GoogleDriveResponse> driveResponseMap = new HashMap<>();
+
+        for (Task task : tasks) {
+            String fileId = googleDriveService.extractFileId(task.getAttachment());
+            if (fileId != null) {
+                JsonBatchCallback<com.google.api.services.drive.model.File> callback = new JsonBatchCallback<>() {
+                    @Override
+                    public void onSuccess(com.google.api.services.drive.model.File file, com.google.api.client.http.HttpHeaders httpHeaders) throws IOException {
+                        GoogleDriveResponse response = new GoogleDriveResponse();
+                        response.setFileName(file.getName());
+                        response.setFileUrl(file.getWebViewLink());
+                        response.setDownloadUrl(file.getWebContentLink());
+                        driveResponseMap.put(fileId, response);
+                    }
+
+                    @Override
+                    public void onFailure(GoogleJsonError googleJsonError, com.google.api.client.http.HttpHeaders httpHeaders) throws IOException {
+                        throw new RuntimeException("Lỗi khi lấy tệp từ Google Drive: " + googleJsonError.getMessage());
+                    }
+                };
+                driveService.files().get(fileId)
+                        .setFields("name, webViewLink, webContentLink")
+                        .queue(batch, callback);
+            }
+        }
+
+        for (File file : files) {
+            String fileId = googleDriveService.extractFileId(file.getUrl());
+            if (fileId != null) {
+                JsonBatchCallback<com.google.api.services.drive.model.File> callback = new JsonBatchCallback<>() {
+                    @Override
+                    public void onSuccess(com.google.api.services.drive.model.File file, com.google.api.client.http.HttpHeaders httpHeaders) throws IOException {
+                        GoogleDriveResponse response = new GoogleDriveResponse();
+                        response.setFileName(file.getName());
+                        response.setFileUrl(file.getWebViewLink());
+                        response.setDownloadUrl(file.getWebContentLink());
+                        driveResponseMap.put(fileId, response);
+                    }
+
+                    @Override
+                    public void onFailure(GoogleJsonError googleJsonError, com.google.api.client.http.HttpHeaders httpHeaders) throws IOException {
+                        throw new RuntimeException("Lỗi khi lấy tệp từ Google Drive: " + googleJsonError.getMessage());
+                    }
+                };
+                driveService.files().get(fileId)
+                        .setFields("name, webViewLink, webContentLink")
+                        .queue(batch, callback);
+            }
+        }
+
+        try {
+            batch.execute();
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi thực thi batch request Google Drive", e);
+        }
+
+        // Ánh xạ tasks
         List<GetTaskResponse> responses = tasks.stream().map(task -> {
-            User user = userRepository.findById(task.getCreatedBy().getUser().getId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+            GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
 
-            GetUserResponse userResponse = userMapper.getUserResponse(user);
+            // Ánh xạ user
+            User createdBy = userMap.get(task.getCreatedBy().getUser().getId());
+            UserProfile createdByProfile = profileMap.get(createdBy.getId());
+            GetUserResponse userResponse = userMapper.getUserResponse(createdBy);
+            userResponse.setProfile(userProfileMapper.toProfile(createdByProfile));
 
-            UserProfile userProfile = profileRepository.findByUserId(user.getId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+            // Ánh xạ assignee
+            User assignee = userMap.get(task.getAssignee().getUser().getId());
+            UserProfile assigneeProfile = profileMap.get(assignee.getId());
+            GetUserResponse assigneeResponse = userMapper.getUserResponse(assignee);
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
 
-            User assignee = userRepository.findById(task.getAssignee().getUser().getId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
-            GetUserResponse userAssigneeResponse = userMapper.getUserResponse(assignee);
-            UserProfile userProfileAssignee = userProfileRepository.findByUserId(assignee.getId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
+            // Ánh xạ reporter
+            User reporter = userMap.get(task.getReporter().getUser().getId());
+            UserProfile reporterProfile = profileMap.get(reporter.getId());
+            GetUserResponse reporterResponse = userMapper.getUserResponse(reporter);
+            reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
 
-            User report = userRepository.findById(task.getReporter().getUser().getId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
-            GetUserResponse userReporterResponse = userMapper.getUserResponse(report);
-            UserProfile userProfileReporter = userProfileRepository.findByUserId(report.getId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
-
-            GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
-            GetProfileResponse userProfileAssigneeResponse = userProfileMapper.toProfile(userProfileAssignee);
-            GetProfileResponse userProfileReporterResponse = userProfileMapper.toProfile(userProfileReporter);
-
-            userAssigneeResponse.setProfile(userProfileAssigneeResponse);
-            userResponse.setProfile(profileResponse);
-            userReporterResponse.setProfile(userProfileReporterResponse);
-
-            List<Issue> issues = issueRepository.findAllByTaskId(task.getId());
-            List<GetIssueResponse> issueResponses = issues.stream().map(issue -> {
+            // Ánh xạ issues
+            List<Issue> taskIssues = issuesByTaskId.getOrDefault(task.getId(), Collections.emptyList());
+            List<GetIssueResponse> issueResponses = taskIssues.stream().map(issue -> {
                 GetIssueResponse issueResponse = new GetIssueResponse();
                 issueResponse.setId(issue.getId());
                 issueResponse.setLabel(issue.getLabel());
@@ -225,81 +334,43 @@ public class TaskService implements ITaskService {
                 issueResponse.setStatus(issue.getStatus().name());
                 issueResponse.setSeverity(issue.getSeverity().name());
 
-                User issueAssignee = userRepository.findById(issue.getAssignee().getUser().getId())
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+                User issueAssignee = userMap.get(issue.getAssignee().getUser().getId());
+                UserProfile issueAssigneeProfile = profileMap.get(issueAssignee.getId());
                 GetUserResponse issueAssigneeResponse = userMapper.getUserResponse(issueAssignee);
-                UserProfile issueAssigneeProfile = userProfileRepository.findByUserId(issueAssignee.getId())
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
                 issueAssigneeResponse.setProfile(userProfileMapper.toProfile(issueAssigneeProfile));
 
-                User issueReporter = userRepository.findById(issue.getReporter().getUser().getId())
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+                User issueReporter = userMap.get(issue.getReporter().getUser().getId());
+                UserProfile issueReporterProfile = profileMap.get(issueReporter.getId());
                 GetUserResponse issueReporterResponse = userMapper.getUserResponse(issueReporter);
-                UserProfile issueReporterProfile = userProfileRepository.findByUserId(issueReporter.getId())
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
                 issueReporterResponse.setProfile(userProfileMapper.toProfile(issueReporterProfile));
 
-                User issueCreatedBy = userRepository.findById(issue.getCreatedBy().getUser().getId())
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+                User issueCreatedBy = userMap.get(issue.getCreatedBy().getUser().getId());
+                UserProfile issueCreatedByProfile = profileMap.get(issueCreatedBy.getId());
                 GetUserResponse issueCreatedByResponse = userMapper.getUserResponse(issueCreatedBy);
-                UserProfile issueCreatedByProfile = userProfileRepository.findByUserId(issueCreatedBy.getId())
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
                 issueCreatedByResponse.setProfile(userProfileMapper.toProfile(issueCreatedByProfile));
 
                 issueResponse.setAssignee(issueAssigneeResponse);
                 issueResponse.setReporter(issueReporterResponse);
                 issueResponse.setUser(issueCreatedByResponse);
-
                 return issueResponse;
             }).collect(Collectors.toList());
-            Drive driveService = null;
-            try {
-                driveService = googleDriveService.getDriveService();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            String fileId = googleDriveService.extractFileId(task.getAttachment());
-            com.google.api.services.drive.model.File file = null;
-            try {
-                file = driveService.files().get(fileId).setFields("name, webViewLink, webContentLink").execute();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            GoogleDriveResponse googleDriveResponse = new GoogleDriveResponse();
-            googleDriveResponse.setFileUrl(file.getWebViewLink());
-            googleDriveResponse.setFileName(file.getName());
-            googleDriveResponse.setDownloadUrl(file.getWebContentLink());
 
-            List<GoogleDriveResponse> googleDriveResponses = new ArrayList<>();
-            List<File> files = fileRepository.findByTaskId(task.getId());
-            for (File fileTask : files) {
-                String fileTaskId = googleDriveService.extractFileId(fileTask.getUrl());
-                try {
-                    com.google.api.services.drive.model.File driveFile = driveService.files()
-                            .get(fileTaskId)
-                            .setFields("name, webViewLink, webContentLink")
-                            .execute();
+            // Ánh xạ Google Drive
+            GoogleDriveResponse attachmentResponse = driveResponseMap.get(googleDriveService.extractFileId(task.getAttachment()));
+            List<GoogleDriveResponse> fileResponses = filesByTaskId.getOrDefault(task.getId(), Collections.emptyList()).stream()
+                    .map(file -> driveResponseMap.get(googleDriveService.extractFileId(file.getUrl())))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
 
-                    GoogleDriveResponse fileResponse = new GoogleDriveResponse();
-                    fileResponse.setFileName(driveFile.getName());
-                    fileResponse.setFileUrl(driveFile.getWebViewLink());
-                    fileResponse.setDownloadUrl(driveFile.getWebContentLink());
-
-                    googleDriveResponses.add(fileResponse);
-                } catch (IOException e) {
-                    throw new RuntimeException("Lỗi khi lấy thông tin file từ Google Drive", e);
-                }
-            }
-
-            GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
             taskResponse.setUser(userResponse);
-            taskResponse.setAttachment(googleDriveResponse);
-            taskResponse.setAssignee(userAssigneeResponse);
-            taskResponse.setReporter(userReporterResponse);
+            taskResponse.setAssignee(assigneeResponse);
+            taskResponse.setReporter(reporterResponse);
+            taskResponse.setAttachment(attachmentResponse);
+            taskResponse.setFileResponse(fileResponses);
             taskResponse.setIssues(issueResponses);
-            taskResponse.setFileResponse(googleDriveResponses);
             return taskResponse;
         }).collect(Collectors.toList());
+
         return responses;
     }
 
@@ -636,15 +707,26 @@ public class TaskService implements ITaskService {
         issue.setCreatedBy(task.getReporter());
         issueRepository.save(issue);
 
+
+        User assigneeUser = userRepository.findById(issue.getAssignee().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng assignee"));
+        User reporterUser = userRepository.findById(issue.getReporter().getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng reporter"));
+        UserProfile reporterProfile = profileRepository.findByUserId(reporterUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người báo cáo issue"));
+
+        Notification assigneeNotification = new Notification();
+        assigneeNotification.setMessage(String.format("Bạn được giao issue mới '%s' bởi %s trong dự án %s",
+                issue.getLabel(), reporterProfile.getFullName(), project.getName()));
+        assigneeNotification.setRead(false);
+        assigneeNotification.setUser(assigneeUser);
+        assigneeNotification.setProject(project);
+        assigneeNotification.setActive(true);
+        assigneeNotification.setCreatedAt(LocalDateTime.now());
+        assigneeNotification.setUpdatedAt(LocalDateTime.now());
+        notificationService.createNotification(assigneeNotification);
+
         projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.CREATE_ISSUE, profileCurrentUser.getFullName() + " created " + issue.getLabel());
-
-        User creator = userRepository.findById(issue.getCreatedBy().getUser().getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo issue"));
-        GetUserResponse creatorResponse = userMapper.getUserResponse(creator);
-
-        UserProfile creatorProfile = profileRepository.findByUserId(creator.getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo issue"));
-        creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
 
         User assignee = userRepository.findById(issue.getAssignee().getUser().getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người nhận issue"));
@@ -653,11 +735,8 @@ public class TaskService implements ITaskService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người nhận issue"));
         assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
 
-        User reporter = userRepository.findById(issue.getReporter().getUser().getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người báo cáo issue"));
-        GetUserResponse reporterResponse = userMapper.getUserResponse(reporter);
-        UserProfile reporterProfile = profileRepository.findByUserId(reporter.getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người báo cáo issue"));
+        GetUserResponse reporterResponse = userMapper.getUserResponse(reporterUser);
+
         reporterResponse.setProfile(userProfileMapper.toProfile(reporterProfile));
 
         CreateNewIssueByTaskResponse response = new CreateNewIssueByTaskResponse();
@@ -672,7 +751,7 @@ public class TaskService implements ITaskService {
         response.setDueDate(issue.getDueDate());
         response.setPriority(issue.getPriority().name());
         response.setSeverity(issue.getSeverity().name());
-        response.setUser(creatorResponse);
+        response.setUser(reporterResponse);
         response.setAssignee(assigneeResponse);
         response.setReporter(reporterResponse);
         return response;

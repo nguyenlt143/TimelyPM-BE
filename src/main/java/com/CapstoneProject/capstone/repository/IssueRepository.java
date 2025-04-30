@@ -39,5 +39,6 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
     """, nativeQuery = true)
     List<Issue> findByProjectId(@Param("projectId") UUID projectId);
 
-
+    @Query("SELECT i FROM Issue i WHERE i.task.id IN :taskIds")
+    List<Issue> findByTaskIds(@Param("taskIds") List<UUID> taskIds);
 }

@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    image: tranquoccuong/timelypm-be:latest
+    container_name: TimelyPM
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: always

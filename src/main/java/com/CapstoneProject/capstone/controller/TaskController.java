@@ -51,7 +51,7 @@ public class TaskController {
     @PreAuthorize("hasAuthority('USER')")
     @GetMapping(UrlConstant.TASK.GET_TASKS)
     public ResponseEntity<BaseResponse<List<GetTaskResponse>>> GetAllTask(@RequestParam UUID projectId,
-                                                                          @RequestParam UUID topicId) {
+                                                                          @RequestParam UUID topicId) throws IOException {
         List<GetTaskResponse> response = taskService.getTasks(projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy danh sách task thành công", response));
     }

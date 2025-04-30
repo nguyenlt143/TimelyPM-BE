@@ -13,6 +13,7 @@ import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
+import com.CapstoneProject.capstone.service.INotificationService;
 import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.service.IQuestionService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
@@ -37,6 +38,7 @@ public class QuestionService implements IQuestionService {
     private final UserProfileRepository profileRepository;
     private final ProjectRepository projectRepository;
     private final IProjectActivityLogService projectActivityLogService;
+    private final INotificationService notificationService;
 
     @Override
     public CreateNewQuestionResponse createNewQuestion(UUID projectId, UUID topicId, CreateNewQuestionRequest request) {
@@ -61,7 +63,7 @@ public class QuestionService implements IQuestionService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
 
-        ProjectMember pmUser = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
+        ProjectMember creator = projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow(()-> new NotFoundException("Bạn không phải thành viên của project này"));
 
         Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
         if(!topic.getProject().getId().equals(project.getId())){
@@ -82,7 +84,7 @@ public class QuestionService implements IQuestionService {
                 System.out.println("Lỗi khi chuyển đổi số: " + e.getMessage());
             }
         }
-        String questionLabel = String.format("%s-%s-Task-%03d", project.getName(), topic.getLabels(), newQuestionNumber);
+        String questionLabel = String.format("%s-%s-Question-%03d", project.getName(), topic.getLabels(), newQuestionNumber);
 
         ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         Question question = new Question();
@@ -91,7 +93,7 @@ public class QuestionService implements IQuestionService {
         question.setDescription(request.getDescription());
         question.setAttachment(request.getAttachment());
         question.setAssignee(projectMember);
-        question.setCreatedBy(pmUser);
+        question.setCreatedBy(creator);
         question.setStartDate(request.getStartDate());
         question.setDueDate(request.getDueDate());
         question.setStatus(StatusEnum.PENDING);
@@ -102,11 +104,26 @@ public class QuestionService implements IQuestionService {
         question.setTopic(topic);
         questionRepository.save(question);
 
+        UserProfile creatorProfile = profileRepository.findByUserId(creator.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+        User assigneeUser = userRepository.findById(projectMember.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng assignee"));
+
+        Notification assigneeNotification = new Notification();
+        assigneeNotification.setMessage(String.format("Bạn được giao question mới '%s' bởi %s trong dự án %s",
+                questionLabel, creatorProfile.getFullName(), project.getName()));
+        assigneeNotification.setRead(false);
+        assigneeNotification.setUser(assigneeUser);
+        assigneeNotification.setProject(project);
+        assigneeNotification.setActive(true);
+        assigneeNotification.setCreatedAt(LocalDateTime.now());
+        assigneeNotification.setUpdatedAt(LocalDateTime.now());
+        notificationService.createNotification(assigneeNotification);
+
         projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.CREATE_QUESTION, profileCurrentUser.getFullName() + " created " + question.getLabel());
 
-        User user = userRepository.findById(projectMember.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
-        GetUserResponse userResponse = userMapper.getUserResponse(user);
-        UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
+        GetUserResponse userResponse = userMapper.getUserResponse(assigneeUser);
+        UserProfile userProfile = profileRepository.findByUserId(assigneeUser.getId()).get();
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
         userResponse.setProfile(profileResponse);
         CreateNewQuestionResponse response = new CreateNewQuestionResponse();

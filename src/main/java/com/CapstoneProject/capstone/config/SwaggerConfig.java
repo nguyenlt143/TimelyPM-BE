@@ -19,7 +19,8 @@ public class SwaggerConfig {
 
         List<Server> servers = Arrays.asList(
                 new Server().url("http://localhost:8080").description("Localhost"),
-                new Server().url("http://14.225.220.28:8080").description("Public Server")
+                new Server().url("http://14.225.220.28:8080").description("Public Server"),
+                new Server().url("https://winnertech.cloud").description("Public Server")
         );
 
         return new OpenAPI()

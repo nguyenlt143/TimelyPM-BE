@@ -12,4 +12,7 @@ import java.util.UUID;
 public interface FileRepository extends JpaRepository<File, UUID> {
     @Query(value = "SELECT * FROM file WHERE active = true AND task_id = :taskId", nativeQuery = true)
     List<File> findByTaskId(@Param("taskId") UUID taskId);
+
+    @Query("SELECT f FROM File f WHERE f.task.id IN :taskIds")
+    List<File> findByTaskIds(@Param("taskIds") List<UUID> taskIds);
 }

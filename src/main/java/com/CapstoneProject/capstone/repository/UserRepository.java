@@ -36,4 +36,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     """, nativeQuery = true)
     List<User> findUsersWithRolePMOrQAByProjectId(@Param("projectId") UUID projectId);
 
+    List<User> findAllById(Iterable<UUID> ids);
+
 }

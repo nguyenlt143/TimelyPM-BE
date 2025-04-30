@@ -14,10 +14,10 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
     List<Question> findByTopicId(@Param("topicId") UUID topicId);
 
     @Query(value = """
-            SELECT t.label
-            FROM question t
-            WHERE t.topic_id = :topicId
-            ORDER BY t.label DESC
+            SELECT q.label
+            FROM question q
+            WHERE q.topic_id = :topicId
+            ORDER BY q.label DESC
             LIMIT 1
             """, nativeQuery = true)
     Optional<String> findMaxQuestionLabelByTopicId(@Param("topicId") UUID topicId);

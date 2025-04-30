@@ -14,6 +14,7 @@ import com.CapstoneProject.capstone.mapper.UserProfileMapper;
 import com.CapstoneProject.capstone.model.*;
 import com.CapstoneProject.capstone.repository.*;
 import com.CapstoneProject.capstone.service.IIssueService;
+import com.CapstoneProject.capstone.service.INotificationService;
 import com.CapstoneProject.capstone.service.IProjectActivityLogService;
 import com.CapstoneProject.capstone.util.AuthenUtil;
 import com.google.api.services.drive.Drive;
@@ -42,6 +43,7 @@ public class IssueService implements IIssueService {
     private final GoogleDriveService googleDriveService;
     private final FileRepository fileRepository;
     private final IProjectActivityLogService projectActivityLogService;
+    private final INotificationService notificationService;
 
     @Override
     public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request, MultipartFile file) throws IOException {
@@ -100,7 +102,7 @@ public class IssueService implements IIssueService {
                 System.out.println("Lỗi khi chuyển đổi số: " + e.getMessage());
             }
         }
-        String issueLabel = String.format("%s-%s-Task-%03d", project.getName(), topic.getLabels(), newIssueNumber);
+        String issueLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), newIssueNumber);
 
         ProjectMember assignee = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         ProjectMember reporter = projectMemberRepository.findById(request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
@@ -125,12 +127,41 @@ public class IssueService implements IIssueService {
         issue.setTopic(topic);
         issueRepository.save(issue);
 
-        User user = userRepository.findById(assignee.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
-        UserProfile userProfile = profileRepository.findByUserId(user.getId()).get();
+        UserProfile pmProfile = profileRepository.findByUserId(pmMember.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+        User assigneeUser = userRepository.findById(assignee.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng assignee"));
+        User reporterUser = userRepository.findById(reporter.getUser().getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng reporter"));
+
+        Notification assigneeNotification = new Notification();
+        assigneeNotification.setMessage(String.format("Bạn được giao issue mới '%s' bởi %s trong dự án %s",
+                issueLabel, pmProfile.getFullName(), project.getName()));
+        assigneeNotification.setRead(false);
+        assigneeNotification.setUser(assigneeUser);
+        assigneeNotification.setProject(project);
+        assigneeNotification.setActive(true);
+        assigneeNotification.setCreatedAt(LocalDateTime.now());
+        assigneeNotification.setUpdatedAt(LocalDateTime.now());
+        notificationService.createNotification(assigneeNotification);
+
+        Notification reporterNotification = new Notification();
+        reporterNotification.setMessage(String.format("Issue mới '%s' được tạo bởi %s trong dự án %s, bạn là reporter",
+                issueLabel, pmProfile.getFullName(), project.getName()));
+        reporterNotification.setRead(false);
+        reporterNotification.setUser(reporterUser);
+        reporterNotification.setProject(project);
+        reporterNotification.setActive(true);
+        reporterNotification.setCreatedAt(LocalDateTime.now());
+        reporterNotification.setUpdatedAt(LocalDateTime.now());
+        notificationService.createNotification(reporterNotification);
+
+//        User user = userRepository.findById(assignee.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
+        UserProfile userProfile = profileRepository.findByUserId(assigneeUser.getId()).get();
 
         projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.CREATE_ISSUE, profileCurrentUser.getFullName() + " created new issue successfully");
 
-        GetUserResponse userResponse = userMapper.getUserResponse(user);
+        GetUserResponse userResponse = userMapper.getUserResponse(assigneeUser);
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
         userResponse.setProfile(profileResponse);
         CreateNewIssueResponse response = new CreateNewIssueResponse();

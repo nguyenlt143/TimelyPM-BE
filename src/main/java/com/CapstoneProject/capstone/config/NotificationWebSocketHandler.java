@@ -59,7 +59,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
             session.getAttributes().put("username", username);
             session.getAttributes().put("userId", user.getId());
             log.info("Client authenticated via message: {} with userId: {}", session.getId(), user.getId());
-            session.sendMessage(new TextMessage("{\"message\": \"Authenticated\"}"));
+//            session.sendMessage(new TextMessage("{\"message\": \"Authenticated\"}"));
         } catch (Exception e) {
             log.error("Error during authentication for session {}: {}", session.getId(), e.getMessage());
             session.sendMessage(new TextMessage("{\"error\": \"Authentication failed: " + e.getMessage() + "\"}"));
