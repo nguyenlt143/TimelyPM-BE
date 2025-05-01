@@ -43,6 +43,6 @@ jobs:
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           cd ~/tranquoccuong
-          docker pull tranquoccuong/timelypm-be:latest
+          docker pull tranquoccuong/timelypm:latest
           docker-compose down
           docker-compose up -d
