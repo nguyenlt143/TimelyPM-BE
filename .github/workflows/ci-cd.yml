@@ -36,56 +36,13 @@ jobs:
 
     - name: Deploy to Server via SSH
       uses: appleboy/ssh-action@v1.0.3
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       with:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          echo "DOCKER_USERNAME: $DOCKER_USERNAME"
-          if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
-            echo "Error: DOCKER_USERNAME or DOCKER_PASSWORD is not set"
-            exit 1
-          fi
-
-          if ! command -v docker &> /dev/null; then
-            echo "Docker not found. Installing Docker..."
-            sudo apt-get update
-            sudo apt-get install -y docker.io
-            sudo systemctl start docker
-            sudo systemctl enable docker
-            sudo usermod -aG docker $USER
-          fi
-
-          if ! command -v docker-compose &> /dev/null; then
-            echo "Docker Compose not found. Please install it manually."
-            exit 1
-          fi
-
           cd ~/tranquoccuong
-
-          # Tạo file docker-compose.yml
-          cat <<EOF > ~/tranquoccuong/docker-compose.yml
-          version: '3.8'
-          services:
-            app:
-              image: tranquoccuong/timelypm-be:latest
-              container_name: TimelyPM
-              ports:
-                - "8080:8080"
-              environment:
-                - SPRING_PROFILES_ACTIVE=prod
-              restart: always
-          EOF
-
-          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-          docker ps -q --filter "publish=8080" | xargs -r docker stop
-          docker ps -a -q --filter "publish=8080" | xargs -r docker rm
-
           docker pull tranquoccuong/timelypm-be:latest
           docker-compose down
           docker-compose up -d
