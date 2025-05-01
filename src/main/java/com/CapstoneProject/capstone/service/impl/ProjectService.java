@@ -117,9 +117,10 @@ public class ProjectService implements IProjectService {
 
         List<StatusEnum> allStatuses = new ArrayList<>();
         List<IssueStatusEnum> allIssueStatus = new ArrayList<>();
+        List<TaskStatusEnum> allTaskStatus = new ArrayList<>();
         allTasks.stream()
                 .filter(task -> task.getStatus() != null)
-                .forEach(task -> allStatuses.add(task.getStatus()));
+                .forEach(task -> allTaskStatus.add(task.getStatus()));
         allIssues.stream()
                 .filter(issue -> issue.getStatus() != null)
                 .forEach(issue -> allIssueStatus.add(issue.getStatus()));

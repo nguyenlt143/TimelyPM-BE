@@ -128,7 +128,7 @@ public class TaskService implements ITaskService {
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         task.setActive(true);
-        task.setStatus(StatusEnum.PENDING);
+        task.setStatus(TaskStatusEnum.PENDING);
         taskRepository.save(task);
 
         UserProfile pmProfile = profileRepository.findByUserId(pmUser.getId())
@@ -582,19 +582,68 @@ public class TaskService implements ITaskService {
         Optional<User> pmUserOpt = userRepository.findUserWithRolePMByProjectId(projectId);
 
         boolean isPM = pmUserOpt.isPresent() && pmUserOpt.get().getId().equals(userId);
+        boolean isAssignee = task.getAssignee() != null && task.getAssignee().getUser().getId().equals(userId);
+        boolean isReporter = task.getReporter().getUser().getId().equals(userId);
 
-        boolean isAssignee = task.getAssignee().getUser().getId().equals(userId);
-
-
-        if (!isPM && !isAssignee) {
+        if (!isPM && !isAssignee && !isReporter) {
             throw new ForbiddenException("Bạn không có quyền cập nhật task này");
         }
 
-        StatusEnum newStatus;
+        TaskStatusEnum newStatus;
         try {
-            newStatus = StatusEnum.valueOf(status.toUpperCase());
+            newStatus = TaskStatusEnum.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            throw new InvalidEnumException("Trạng thái không hợp lệ! Chỉ chấp nhận OPEN, INPROGRESS, DONE.");
+            throw new InvalidEnumException("Trạng thái không hợp lệ! Các trạng thái hợp lệ: " +
+                    Arrays.toString(TaskStatusEnum.values()));
+        }
+
+        TaskStatusEnum currentStatus = task.getStatus();
+        boolean isValidTransition = false;
+        List<TaskStatusEnum> assigneeStatuses = Arrays.asList(TaskStatusEnum.TODO, TaskStatusEnum.IN_PROGRESS, TaskStatusEnum.WAITING_TEST);
+
+        if (assigneeStatuses.contains(newStatus) && !isAssignee) {
+            throw new ForbiddenException("Chỉ assignee mới có thể chuyển trạng thái sang " + newStatus);
+        }
+        if (newStatus == TaskStatusEnum.DONE && !isReporter) {
+            throw new ForbiddenException("Chỉ reporter mới có thể chuyển trạng thái sang DONE");
+        }
+
+        switch (currentStatus) {
+            case PENDING:
+                isValidTransition = newStatus == TaskStatusEnum.TODO;
+                break;
+
+            case TODO:
+                isValidTransition = newStatus == TaskStatusEnum.IN_PROGRESS;
+                break;
+
+            case IN_PROGRESS:
+                isValidTransition = newStatus == TaskStatusEnum.WAITING_TEST;
+                break;
+
+            case WAITING_TEST:
+                isValidTransition = newStatus == TaskStatusEnum.DONE;
+                if (isValidTransition) {
+                    List<Issue> relatedIssues = issueRepository.findAllByTaskId(task.getId());
+                    if (!relatedIssues.isEmpty()) {
+                        for (Issue issue : relatedIssues) {
+                            if (issue.getStatus() != IssueStatusEnum.CLOSED && issue.getStatus() != IssueStatusEnum.NOT_BUG) {
+                                throw new InvalidEnumException("Không thể chuyển sang DONE: Issue " + issue.getLabel() +
+                                        " chưa ở trạng thái DONE hoặc NOT_BUG");
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case DONE:
+                isValidTransition = false;
+                break;
+        }
+
+        if (!isValidTransition) {
+            throw new InvalidEnumException("Chuyển đổi trạng thái không hợp lệ! Từ " + currentStatus +
+                    ", chỉ có thể chuyển sang: " + getAllowedTransitions(currentStatus));
         }
 
         User creator = userRepository.findById(task.getCreatedBy().getUser().getId())
@@ -621,12 +670,28 @@ public class TaskService implements ITaskService {
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
-        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_TASK, profileCurrentUser.getFullName() + " updated " + task.getLabel());
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_TASK,
+                profileCurrentUser.getFullName() + " updated status of " + task.getLabel() + " to " + newStatus);
 
         GetTaskResponse taskResponse = taskMapper.toGetResponse(task);
         taskResponse.setUser(creatorResponse);
         taskResponse.setAssignee(assigneeResponse);
         return taskResponse;
+    }
+
+    private String getAllowedTransitions(TaskStatusEnum currentStatus) {
+        switch (currentStatus) {
+            case PENDING:
+                return "[TODO]";
+            case TODO:
+                return "[IN_PROGRESS]";
+            case IN_PROGRESS:
+                return "[WAITING_TEST]";
+            case WAITING_TEST:
+                return "[DONE]";
+            default:
+                return "[]";
+        }
     }
 
     @Override
