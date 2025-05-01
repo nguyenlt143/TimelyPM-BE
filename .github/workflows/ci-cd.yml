@@ -42,7 +42,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          cd ~/timelypm-deploy
+          cd ~/tranquoccuong
           docker pull tranquoccuong/timelypm-be:latest
           docker-compose down
           docker-compose up -d
