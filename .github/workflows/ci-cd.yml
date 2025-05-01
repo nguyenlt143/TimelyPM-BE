@@ -42,7 +42,37 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
+          script: |
+          if ! command -v docker &> /dev/null; then
+            echo "Docker not found. Installing Docker..."
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+            sudo systemctl start docker
+            sudo systemctl enable docker
+          fi
+
+          if ! command -v docker-compose &> /dev/null; then
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.7/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+
+          mkdir -p ~/tranquoccuong
           cd ~/tranquoccuong
-          docker pull tranquoccuong/timelypm:latest
+
+          cat <<EOF > ~/tranquoccuong/docker-compose.yml
+          version: '3.8'
+          services:
+            timelypm-be:
+              image: tranquoccuong/timelypm-be:latest
+              ports:
+                - "8080:8080"
+              environment:
+                - SPRING_PROFILES_ACTIVE=prod
+              restart: always
+          EOF
+
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+          docker pull tranquoccuong/timelypm-be:latest
           docker-compose down
           docker-compose up -d
