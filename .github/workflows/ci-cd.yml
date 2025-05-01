@@ -63,7 +63,6 @@ jobs:
           mkdir -p ~/tranquoccuong
           cd ~/tranquoccuong
 
-          # Tạo file docker-compose.yml
           cat <<EOF > ~/tranquoccuong/docker-compose.yml
           version: '3.8'
           services:
