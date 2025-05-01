@@ -45,6 +45,14 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
+          # Debug: In giá trị biến
+          echo "DOCKER_USERNAME: $DOCKER_USERNAME"
+          if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
+            echo "Error: DOCKER_USERNAME or DOCKER_PASSWORD is not set"
+            exit 1
+          fi
+
+          # Kiểm tra Docker
           if ! command -v docker &> /dev/null; then
             echo "Docker not found. Installing Docker..."
             sudo apt-get update
@@ -54,13 +62,16 @@ jobs:
             sudo usermod -aG docker $USER
           fi
 
+          # Kiểm tra Docker Compose
           if ! command -v docker-compose &> /dev/null; then
             echo "Docker Compose not found. Please install it manually."
             exit 1
           fi
 
+          # Chuyển vào thư mục
           cd ~/tranquoccuong
 
+          # Tạo file docker-compose.yml (dùng nội dung từ source code)
           cat <<EOF > ~/tranquoccuong/docker-compose.yml
           version: '3.8'
           services:
@@ -74,8 +85,14 @@ jobs:
               restart: always
           EOF
 
+          # Đăng nhập Docker Hub
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
+          # Dừng và xóa container cũ để giải phóng cổng
+          docker stop TimelyPM || true
+          docker rm TimelyPM || true
+
+          # Pull image, dừng và chạy lại container
           docker pull tranquoccuong/timelypm-be:latest
           docker-compose down
           docker-compose up -d
