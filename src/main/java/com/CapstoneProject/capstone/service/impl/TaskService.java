@@ -732,6 +732,10 @@ public class TaskService implements ITaskService {
             throw new InvalidProjectException("Task không thuộc module đã chỉ định");
         }
 
+        if (task.getStatus() != TaskStatusEnum.WAITING_TEST) {
+            throw new ForbiddenException("Chỉ có thể tạo issue khi task ở trạng thái WAITING_TEST.");
+        }
+
         UUID userId = AuthenUtil.getCurrentUserId();
 
         User currentUser = userRepository.findById(userId)
