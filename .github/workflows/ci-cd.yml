@@ -1,98 +1,40 @@
-name: CI/CD for TimelyPM
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main
+      - main  # hoặc branch bạn muốn trigger
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout source code
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up JDK
-      uses: actions/setup-java@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
       with:
-        java-version: '17'
-        distribution: 'temurin'
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Grant execute permission for mvnw
-      run: chmod +x ./mvnw
+    - name: Build and Push Docker image
+      run: |
+        docker build -t tranquoccuong/timelypm-be:latest .
+        docker push tranquoccuong/timelypm-be:latest
 
-    - name: Build Spring Boot JAR
-      run: ./mvnw clean package
-
-    - name: Login to Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-    - name: Build Docker image
-      run: docker build -t tranquoccuong/timelypm-be:latest .
-
-    - name: Push image to Docker Hub
-      run: docker push tranquoccuong/timelypm-be:latest
-
-    - name: Deploy to Server via SSH
-      uses: appleboy/ssh-action@v1.0.3
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Deploy on remote server via SSH
+      uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          # Debug: In giá trị biến
-          echo "DOCKER_USERNAME: $DOCKER_USERNAME"
-          if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
-            echo "Error: DOCKER_USERNAME or DOCKER_PASSWORD is not set"
-            exit 1
-          fi
-
-          # Kiểm tra Docker
-          if ! command -v docker &> /dev/null; then
-            echo "Docker not found. Installing Docker..."
-            sudo apt-get update
-            sudo apt-get install -y docker.io
-            sudo systemctl start docker
-            sudo systemctl enable docker
-            sudo usermod -aG docker $USER
-          fi
-
-          # Kiểm tra Docker Compose
-          if ! command -v docker-compose &> /dev/null; then
-            echo "Docker Compose not found. Please install it manually."
-            exit 1
-          fi
-
-          # Chuyển vào thư mục
-          cd ~/tranquoccuong
-
-          # Tạo file docker-compose.yml (dùng nội dung từ source code)
-          cat <<EOF > ~/tranquoccuong/docker-compose.yml
-          version: '3.8'
-          services:
-            app:
-              image: tranquoccuong/timelypm-be:latest
-              container_name: TimelyPM
-              ports:
-                - "8080:8080"
-              environment:
-                - SPRING_PROFILES_ACTIVE=prod
-              restart: always
-          EOF
-
-          # Đăng nhập Docker Hub
-          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-          # Dừng và xóa container cũ để giải phóng cổng
-          docker stop TimelyPM || true
-          docker rm TimelyPM || true
-
-          # Pull image, dừng và chạy lại container
           docker pull tranquoccuong/timelypm-be:latest
-          docker-compose down
-          docker-compose up -d
+          docker stop timelypm-be || true && docker rm timelypm-be || true
+          docker run -d --name timelypm-be -p 8080:8080 tranquoccuong/timelypm-be:latest
