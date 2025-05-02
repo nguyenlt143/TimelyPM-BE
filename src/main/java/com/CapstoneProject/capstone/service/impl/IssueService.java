@@ -69,17 +69,18 @@ public class IssueService implements IIssueService {
         }
 
         UUID userId = AuthenUtil.getCurrentUserId();
-        User currentUser = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+//        User currentUser = userRepository.findById(userId)
+//                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
 
-        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         List<User> pmUsers = userRepository.findUsersWithRolePMOrQAByProjectId(projectId);
         User currentPM = pmUsers.stream()
                 .filter(pm -> pm.getId().equals(userId))
                 .findFirst()
                 .orElseThrow(() -> new ForbiddenException("Bạn không có quyền"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentPM.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
 
         Topic topic = topicRepository.findById(topicId).orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
 
@@ -104,8 +105,8 @@ public class IssueService implements IIssueService {
         }
         String issueLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), newIssueNumber);
 
-        ProjectMember assignee = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
-        ProjectMember reporter = projectMemberRepository.findById(request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember assignee = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember reporter = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         ProjectMember pmMember = projectMemberRepository.findByProjectIdAndUserId(projectId, currentPM.getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
 
         Issue issue = new Issue();
@@ -127,8 +128,8 @@ public class IssueService implements IIssueService {
         issue.setTopic(topic);
         issueRepository.save(issue);
 
-        UserProfile pmProfile = profileRepository.findByUserId(pmMember.getUser().getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+//        UserProfile pmProfile = profileRepository.findByUserId(pmMember.getUser().getId())
+//                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
         User assigneeUser = userRepository.findById(assignee.getUser().getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng assignee"));
         User reporterUser = userRepository.findById(reporter.getUser().getId())
@@ -136,7 +137,7 @@ public class IssueService implements IIssueService {
 
         Notification assigneeNotification = new Notification();
         assigneeNotification.setMessage(String.format("Bạn được giao issue mới '%s' bởi %s trong dự án %s",
-                issueLabel, pmProfile.getFullName(), project.getName()));
+                issueLabel, profileCurrentUser.getFullName(), project.getName()));
         assigneeNotification.setRead(false);
         assigneeNotification.setUser(assigneeUser);
         assigneeNotification.setProject(project);
@@ -147,7 +148,7 @@ public class IssueService implements IIssueService {
 
         Notification reporterNotification = new Notification();
         reporterNotification.setMessage(String.format("Issue mới '%s' được tạo bởi %s trong dự án %s, bạn là reporter",
-                issueLabel, pmProfile.getFullName(), project.getName()));
+                issueLabel, profileCurrentUser.getFullName(), project.getName()));
         reporterNotification.setRead(false);
         reporterNotification.setUser(reporterUser);
         reporterNotification.setProject(project);
@@ -159,7 +160,7 @@ public class IssueService implements IIssueService {
 //        User user = userRepository.findById(assignee.getUser().getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         UserProfile userProfile = profileRepository.findByUserId(assigneeUser.getId()).get();
 
-        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.CREATE_ISSUE, profileCurrentUser.getFullName() + " created new issue successfully");
+        projectActivityLogService.logActivity(project, currentPM, ActivityTypeEnum.CREATE_ISSUE, profileCurrentUser.getFullName() + " created new issue successfully");
 
         GetUserResponse userResponse = userMapper.getUserResponse(assigneeUser);
         GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
