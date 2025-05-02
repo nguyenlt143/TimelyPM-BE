@@ -76,6 +76,7 @@ public class UrlConstant {
         public static final String CREATE = "/create";
         public static final String GET_QUESTIONS = "";
         public static final String GET_QUESTION = "/{id}";
+        public static final String UPDATE_QUESTION = "/{id}";
     }
 
     public static class MEMBER {

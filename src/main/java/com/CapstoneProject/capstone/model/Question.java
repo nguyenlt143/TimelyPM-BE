@@ -2,6 +2,7 @@ package com.CapstoneProject.capstone.model;
 
 
 import com.CapstoneProject.capstone.enums.PriorityEnum;
+import com.CapstoneProject.capstone.enums.QuestionStatusEnum;
 import com.CapstoneProject.capstone.enums.StatusEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -28,7 +29,7 @@ public class Question extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private PriorityEnum priority;
     @Enumerated(EnumType.STRING)
-    private StatusEnum status;
+    private QuestionStatusEnum status;
     @ManyToOne
     @JoinColumn(name = "assignee_to")
     @JsonIgnore

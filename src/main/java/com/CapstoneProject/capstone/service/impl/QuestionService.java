@@ -5,9 +5,7 @@ import com.CapstoneProject.capstone.dto.response.profile.GetProfileResponse;
 import com.CapstoneProject.capstone.dto.response.question.CreateNewQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.question.GetQuestionResponse;
 import com.CapstoneProject.capstone.dto.response.user.GetUserResponse;
-import com.CapstoneProject.capstone.enums.ActivityTypeEnum;
-import com.CapstoneProject.capstone.enums.PriorityEnum;
-import com.CapstoneProject.capstone.enums.StatusEnum;
+import com.CapstoneProject.capstone.enums.*;
 import com.CapstoneProject.capstone.exception.*;
 import com.CapstoneProject.capstone.mapper.UserMapper;
 import com.CapstoneProject.capstone.mapper.UserProfileMapper;
@@ -21,10 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -96,7 +91,7 @@ public class QuestionService implements IQuestionService {
         question.setCreatedBy(creator);
         question.setStartDate(request.getStartDate());
         question.setDueDate(request.getDueDate());
-        question.setStatus(StatusEnum.PENDING);
+        question.setStatus(QuestionStatusEnum.NEW);
         question.setPriority(priority);
         question.setActive(true);
         question.setCreatedAt(LocalDateTime.now());
@@ -225,6 +220,85 @@ public class QuestionService implements IQuestionService {
         UserProfile creatorProfile = profileRepository.findByUserId(createBy.getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người tạo câu hỏi"));
         creatorResponse.setProfile(userProfileMapper.toProfile(creatorProfile));
+
+
+        GetUserResponse assigneeResponse = null;
+        if (question.getAssignee() != null && question.getAssignee().getUser() != null) {
+            User assignee = userRepository.findById(question.getAssignee().getUser().getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy người được giao câu hỏi"));
+
+            assigneeResponse = userMapper.getUserResponse(assignee);
+            UserProfile assigneeProfile = profileRepository.findByUserId(assignee.getId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người được giao câu hỏi"));
+
+            assigneeResponse.setProfile(userProfileMapper.toProfile(assigneeProfile));
+        }
+        GetQuestionResponse questionResponse = new GetQuestionResponse();
+        questionResponse.setId(id);
+        questionResponse.setLabel(question.getLabel());
+        questionResponse.setSummer(question.getSummer());
+        questionResponse.setDescription(question.getDescription());
+        questionResponse.setAttachment(question.getAttachment());
+        questionResponse.setStartDate(question.getStartDate());
+        questionResponse.setDueDate(question.getDueDate());
+        questionResponse.setPriority(question.getPriority().toString());
+        questionResponse.setStatus(question.getStatus().toString());
+        questionResponse.setAssignee(assigneeResponse);
+        questionResponse.setCreateBy(creatorResponse);
+        return questionResponse;
+    }
+
+    @Override
+    public GetQuestionResponse updateQuestion(UUID id, UUID projectId, UUID topicId, String status) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy topic"));
+
+        if (!topic.getProject().getId().equals(project.getId())) {
+            throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
+        }
+
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NotFoundException("Không tìm thấy question"));
+        UUID userId = AuthenUtil.getCurrentUserId();
+
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+
+        UserProfile profileCurrentUser = profileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
+
+        boolean isCreateBy = question.getCreatedBy() != null && question.getCreatedBy().getUser().getId().equals(userId);
+
+        if(!isCreateBy){
+            throw new ForbiddenException("Bạn không có quyền update question, chỉ có người tạo mới được update");
+        }
+        QuestionStatusEnum questionStatusEnum;
+        try {
+            questionStatusEnum = QuestionStatusEnum.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new InvalidEnumException("Trạng thái không hợp lệ! Các trạng thái hợp lệ: " +
+                    Arrays.toString(QuestionStatusEnum.values()));
+        }
+
+        if (question.getStatus() != QuestionStatusEnum.NEW) {
+            throw new InvalidEnumException("Chỉ có thể cập nhật question từ trạng thái NEW, question này đã DONE");
+        }
+
+        if (!questionStatusEnum.equals(QuestionStatusEnum.DONE)) {
+            throw new InvalidEnumException("Chỉ có thể cập nhật trạng thái thành DONE");
+        }
+
+        question.setStatus(QuestionStatusEnum.DONE);
+        question.setUpdatedAt(LocalDateTime.now());
+        questionRepository.save(question);
+
+        projectActivityLogService.logActivity(project, currentUser, ActivityTypeEnum.UPDATE_QUESTION,
+                profileCurrentUser.getFullName() + " đã cập nhật trạng thái " + question.getLabel() + " thành DONE");
+
+        GetUserResponse creatorResponse = userMapper.getUserResponse(currentUser);
+        creatorResponse.setProfile(userProfileMapper.toProfile(profileCurrentUser));
 
 
         GetUserResponse assigneeResponse = null;

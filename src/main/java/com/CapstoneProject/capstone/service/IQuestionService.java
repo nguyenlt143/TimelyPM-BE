@@ -11,4 +11,5 @@ public interface IQuestionService {
     CreateNewQuestionResponse createNewQuestion(UUID projectId, UUID topicId, CreateNewQuestionRequest request);
     List<GetQuestionResponse> getQuestions(UUID projectId, UUID topicId);
     GetQuestionResponse getQuestion(UUID id, UUID projectId, UUID topicId);
+    GetQuestionResponse updateQuestion(UUID id, UUID projectId, UUID topicId, String status);
 }

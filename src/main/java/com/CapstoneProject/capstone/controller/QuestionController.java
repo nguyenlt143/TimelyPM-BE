@@ -46,4 +46,14 @@ public class QuestionController {
         GetQuestionResponse response = questionService.getQuestion(id, projectId, topicId);
         return ResponseEntity.ok(new BaseResponse<>("200", "Lấy question thành công", response));
     }
+
+    @PreAuthorize("hasAuthority('USER')")
+    @PutMapping(UrlConstant.QUESTION.UPDATE_QUESTION)
+    public ResponseEntity<BaseResponse<GetQuestionResponse>> UpdateQuestion(@PathVariable UUID id,
+                                                                            @RequestParam UUID projectId,
+                                                                            @RequestParam UUID topicId,
+                                                                            @RequestParam String status) {
+        GetQuestionResponse response = questionService.updateQuestion(id, projectId, topicId, status);
+        return ResponseEntity.ok(new BaseResponse<>("200", "Update question thành công", response));
+    }
 }

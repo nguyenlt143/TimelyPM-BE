@@ -15,6 +15,7 @@ public enum ActivityTypeEnum {
     UPDATE_MODULE,
     DELETE_MODULE,
     CREATE_QUESTION,
+    UPDATE_QUESTION,
     MEMBER_JOIN,
     REMOVE_MEMBER,
     ACCEPT_MEMBER

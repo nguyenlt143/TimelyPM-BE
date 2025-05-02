@@ -118,6 +118,7 @@ public class ProjectService implements IProjectService {
         List<StatusEnum> allStatuses = new ArrayList<>();
         List<IssueStatusEnum> allIssueStatus = new ArrayList<>();
         List<TaskStatusEnum> allTaskStatus = new ArrayList<>();
+        List<QuestionStatusEnum> allQuestionStatus = new ArrayList<>();
         allTasks.stream()
                 .filter(task -> task.getStatus() != null)
                 .forEach(task -> allTaskStatus.add(task.getStatus()));
@@ -126,7 +127,7 @@ public class ProjectService implements IProjectService {
                 .forEach(issue -> allIssueStatus.add(issue.getStatus()));
         allQuestions.stream()
                 .filter(question -> question.getStatus() != null)
-                .forEach(question -> allStatuses.add(question.getStatus()));
+                .forEach(question -> allQuestionStatus.add(question.getStatus()));
 
         Map<String, Long> tasksByStatus = allStatuses.stream()
                 .collect(Collectors.groupingBy(
