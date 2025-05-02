@@ -86,7 +86,7 @@ public class QuestionService implements IQuestionService {
         }
         String questionLabel = String.format("%s-%s-Question-%03d", project.getName(), topic.getLabels(), newQuestionNumber);
 
-        ProjectMember projectMember = projectMemberRepository.findById(request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         Question question = new Question();
         question.setLabel(questionLabel);
         question.setSummer(request.getSummer());
@@ -104,14 +104,12 @@ public class QuestionService implements IQuestionService {
         question.setTopic(topic);
         questionRepository.save(question);
 
-        UserProfile creatorProfile = profileRepository.findByUserId(creator.getUser().getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng"));
         User assigneeUser = userRepository.findById(projectMember.getUser().getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng assignee"));
 
         Notification assigneeNotification = new Notification();
         assigneeNotification.setMessage(String.format("Bạn được giao question mới '%s' bởi %s trong dự án %s",
-                questionLabel, creatorProfile.getFullName(), project.getName()));
+                questionLabel, profileCurrentUser.getFullName(), project.getName()));
         assigneeNotification.setRead(false);
         assigneeNotification.setUser(assigneeUser);
         assigneeNotification.setProject(project);

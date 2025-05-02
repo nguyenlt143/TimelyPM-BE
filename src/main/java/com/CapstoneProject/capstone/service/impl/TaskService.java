@@ -512,6 +512,7 @@ public class TaskService implements ITaskService {
         taskResponse.setAssignee(assigneeResponse);
         taskResponse.setReporter(reporterResponse);
         taskResponse.setFileResponse(googleDriveResponses);
+        taskResponse.setIssues(issueResponses);
 
         return taskResponse;
     }
