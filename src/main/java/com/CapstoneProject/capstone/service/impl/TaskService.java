@@ -181,7 +181,7 @@ public class TaskService implements ITaskService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy project"));
         UUID userId = AuthenUtil.getCurrentUserId();
-        projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new NotFoundException("Bạn không phải thành viên của project này"));
 
         // Kiểm tra topic
@@ -191,8 +191,17 @@ public class TaskService implements ITaskService {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
-        // Lấy tasks
-        List<Task> tasks = taskRepository.findByTopicId(topicId);
+        Role role = roleRepository.findByName(RoleEnum.PM);
+
+        // Lấy tasks dựa trên vai trò
+        List<Task> tasks;
+        if (projectMember.getRole() == role) {
+            // PM thấy tất cả tasks
+            tasks = taskRepository.findByTopicId(topicId);
+        } else {
+            // Assignee và Reporter chỉ thấy tasks liên quan
+            tasks = taskRepository.findByTopicIdAndUserId(topicId, userId);
+        }
 
         // Thu thập userId từ Task
         Set<UUID> userIds = tasks.stream()

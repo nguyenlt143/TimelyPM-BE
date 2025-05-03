@@ -105,8 +105,8 @@ public class IssueService implements IIssueService {
         }
         String issueLabel = String.format("%s-%s-Issue-%03d", project.getName(), topic.getLabels(), newIssueNumber);
 
-        ProjectMember assignee = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
-        ProjectMember reporter = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getReporter()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember assignee = projectMemberRepository.findByProjectIdAndMemberId(projectId, request.getAssigneeTo(), "APPROVED").orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+        ProjectMember reporter = projectMemberRepository.findByProjectIdAndMemberId(projectId, request.getReporter(), "APPROVED").orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         ProjectMember pmMember = projectMemberRepository.findByProjectIdAndUserId(projectId, currentPM.getId()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên"));
 
         Issue issue = new Issue();

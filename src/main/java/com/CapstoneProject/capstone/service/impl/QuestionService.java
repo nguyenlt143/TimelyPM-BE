@@ -81,7 +81,9 @@ public class QuestionService implements IQuestionService {
         }
         String questionLabel = String.format("%s-%s-Question-%03d", project.getName(), topic.getLabels(), newQuestionNumber);
 
-        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getAssigneeTo()).orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
+
+
+        ProjectMember projectMember = projectMemberRepository.findByProjectIdAndMemberId(projectId, request.getAssigneeTo(), "APPROVED").orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
         Question question = new Question();
         question.setLabel(questionLabel);
         question.setSummer(request.getSummer());

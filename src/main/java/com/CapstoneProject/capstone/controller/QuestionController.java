@@ -25,7 +25,7 @@ public class QuestionController {
     @PostMapping(UrlConstant.QUESTION.CREATE)
     public ResponseEntity<BaseResponse<CreateNewQuestionResponse>> create(@RequestParam UUID projectId,
                                                                           @RequestParam UUID topicId,
-                                                                          @Valid @RequestBody CreateNewQuestionRequest request) {
+                                                                          @RequestBody CreateNewQuestionRequest request) {
         CreateNewQuestionResponse response = questionService.createNewQuestion(projectId, topicId, request);
         return ResponseEntity.ok(new BaseResponse<>("200", "Tạo question thành công", response));
     }

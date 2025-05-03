@@ -35,7 +35,6 @@ public class ProjectMemberService implements IProjectMemberService {
     private final UserRepository userRepository;
     private final IProjectActivityLogService projectActivityLogService;
     private final UserProfileRepository profileRepository;
-    private final NotificationRepository notificationRepository;
     private final INotificationService notificationService;
 
     @Override
