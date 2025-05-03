@@ -44,6 +44,7 @@ public class IssueService implements IIssueService {
     private final FileRepository fileRepository;
     private final IProjectActivityLogService projectActivityLogService;
     private final INotificationService notificationService;
+    private final RoleRepository roleRepository;
 
     @Override
     public CreateNewIssueResponse createNewIssue(UUID projectId, UUID topicId, CreateNewIssueRequest request, MultipartFile file) throws IOException {
@@ -194,7 +195,15 @@ public class IssueService implements IIssueService {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
-        List<Issue> issues = issueRepository.findByTopicId(topicId);
+        Role role = roleRepository.findByName(RoleEnum.PM);
+
+        List<Issue> issues;
+        if (projectMember.getRole() == role) {
+            issues = issueRepository.findByTopicId(topicId);
+        } else {
+            issues = issueRepository.findByTopicIdAndUserId(topicId, userId);
+        }
+
         List<GetIssueResponse> responses = issues.stream().map(issue -> {
             User user = userRepository.findById(issue.getCreatedBy().getUser().getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));

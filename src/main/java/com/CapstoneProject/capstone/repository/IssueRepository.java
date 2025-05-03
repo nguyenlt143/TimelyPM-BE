@@ -15,6 +15,10 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
     @Query(value = "SELECT * FROM issue WHERE active = true AND topic_id = :topicId", nativeQuery = true)
     List<Issue> findByTopicId(@Param("topicId") UUID topicId);
 
+    @Query("SELECT i FROM Issue i WHERE i.active = true AND i.topic.id = :topicId " +
+            "AND (i.assignee.user.id = :userId OR i.reporter.user.id = :userId)")
+    List<Issue> findByTopicIdAndUserId(@Param("topicId") UUID topicId, @Param("userId") UUID userId);
+
     @Query(value = "SELECT * FROM issue WHERE active = true AND task_id = :taskId AND id = :id", nativeQuery = true)
     Optional<Issue> findByIdAndTaskId(@Param("id") UUID id, @Param("taskId") UUID taskId);
 

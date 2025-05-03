@@ -34,6 +34,7 @@ public class QuestionService implements IQuestionService {
     private final ProjectRepository projectRepository;
     private final IProjectActivityLogService projectActivityLogService;
     private final INotificationService notificationService;
+    private final RoleRepository roleRepository;
 
     @Override
     public CreateNewQuestionResponse createNewQuestion(UUID projectId, UUID topicId, CreateNewQuestionRequest request) {
@@ -147,7 +148,14 @@ public class QuestionService implements IQuestionService {
             throw new InvalidProjectException("Topic không thuộc project đã chỉ định");
         }
 
-        List<Question> questions = questionRepository.findByTopicId(topicId);
+        Role role = roleRepository.findByName(RoleEnum.PM);
+
+        List<Question> questions;
+        if (projectMember.getRole() == role) {
+            questions = questionRepository.findByTopicId(topicId);
+        } else {
+            questions = questionRepository.findByTopicIdAndUserId(topicId, userId);
+        }
 
         List<GetQuestionResponse> responses = new ArrayList<>();
         for(Question question : questions){
