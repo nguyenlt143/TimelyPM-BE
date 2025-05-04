@@ -88,8 +88,11 @@ public class UrlConstant {
 
     public static class FILE {
         public static final String FILE = API + "/file";
-        public static final String Add_FILE_IN_TASK = "/{id}/task";
-        public static final String Add_FILE_IN_ISSUE = "/{id}/issue";
+        public static final String ADD_FILE_IN_TASK = "/{id}/task";
+        public static final String ADD_FILE_IN_ISSUE = "/{id}/issue";
+        public static final String DELETE_FILE = "/delete/{id}/file";
+        public static final String ADD_FILE_TO_PROJECT = "/{id}/project";
+        public static final String GET_ALL_FILES_IN_PROJECT = "/{id}/project";
     }
 
     public static class ADMIN {

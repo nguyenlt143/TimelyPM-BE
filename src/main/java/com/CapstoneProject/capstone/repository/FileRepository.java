@@ -15,4 +15,7 @@ public interface FileRepository extends JpaRepository<File, UUID> {
 
     @Query("SELECT f FROM File f WHERE f.task.id IN :taskIds")
     List<File> findByTaskIds(@Param("taskIds") List<UUID> taskIds);
+
+    @Query(value = "SELECT * FROM file WHERE project_id = :projectId AND active = true", nativeQuery = true)
+    List<File> findByProjectId(@Param("projectId") UUID projectId);
 }

@@ -19,8 +19,11 @@ import java.util.Objects;
 @Service
 public class GoogleDriveService {
 
-    private static final String APPLICATION_NAME = "Final";
-    private static final String FOLDER_ID = "1h2D3ySIqj-0R8y7fyu9ezfIpS4AbvWVy";
+    @Value("${google.drive_application}")
+    private String APPLICATION_NAME;
+
+    @Value("${google.drive_folder_id}")
+    private String FOLDER_ID;
 
     @Value("${google.project_id}")
     private String projectId;

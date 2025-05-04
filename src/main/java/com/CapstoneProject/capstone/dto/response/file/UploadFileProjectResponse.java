@@ -11,9 +11,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
-public class GoogleDriveResponse {
+public class UploadFileProjectResponse {
     private UUID id;
-    private String fileName;
-    private String fileUrl;
-    private String downloadUrl;
+    private UUID projectId;
+    private String name;
+    private String url;
 }

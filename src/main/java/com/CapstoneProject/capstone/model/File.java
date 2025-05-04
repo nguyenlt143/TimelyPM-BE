@@ -36,4 +36,9 @@ public class File extends BaseEntity{
     @JoinColumn(name = "project_member_id")
     @JsonIgnore
     private ProjectMember projectMember;
+
+    @ManyToOne
+    @JoinColumn(name = "project_id")
+    @JsonIgnore
+    private Project project;
 }

@@ -28,6 +28,8 @@ public class Project extends BaseEntity {
     private List<Topic> topics;
     @OneToMany(mappedBy = "project")
     private List<ProjectMember> projectMembers;
+    @OneToMany(mappedBy = "project")
+    private List<File> files;
     @ManyToOne()
     @JoinColumn(name = "profile_id")
     @JsonIgnore
