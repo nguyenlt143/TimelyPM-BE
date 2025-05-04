@@ -95,10 +95,8 @@ public class ProjectService implements IProjectService {
 
         List<Task> allTasks = new ArrayList<>();
         List<Issue> allIssues = new ArrayList<>();
-        List<Question> allQuestions = new ArrayList<>();
         Map<Task, Topic> taskToTopic = new HashMap<>();
         Map<Issue, Topic> issueToTopic = new HashMap<>();
-        Map<Question, Topic> questionToTopic = new HashMap<>();
 
         for (Topic topic : project.getTopics()) {
             if (topic.getTasks() != null) {
@@ -109,32 +107,23 @@ public class ProjectService implements IProjectService {
                 allIssues.addAll(topic.getIssues());
                 topic.getIssues().forEach(issue -> issueToTopic.put(issue, topic));
             }
-            if (topic.getQuestions() != null) {
-                allQuestions.addAll(topic.getQuestions());
-                topic.getQuestions().forEach(question -> questionToTopic.put(question, topic));
-            }
         }
 
-        List<StatusEnum> allStatuses = new ArrayList<>();
-        List<IssueStatusEnum> allIssueStatus = new ArrayList<>();
-        List<TaskStatusEnum> allTaskStatus = new ArrayList<>();
-        List<QuestionStatusEnum> allQuestionStatus = new ArrayList<>();
-        allTasks.stream()
+        Map<String, Long> tasksByStatus = allTasks.stream()
                 .filter(task -> task.getStatus() != null)
-                .forEach(task -> allTaskStatus.add(task.getStatus()));
-        allIssues.stream()
-                .filter(issue -> issue.getStatus() != null)
-                .forEach(issue -> allIssueStatus.add(issue.getStatus()));
-        allQuestions.stream()
-                .filter(question -> question.getStatus() != null)
-                .forEach(question -> allQuestionStatus.add(question.getStatus()));
-
-        Map<String, Long> tasksByStatus = allStatuses.stream()
                 .collect(Collectors.groupingBy(
-                        StatusEnum::name,
+                        task -> task.getStatus().name(),
                         Collectors.counting()
                 ));
         chartData.setTasksByStatus(tasksByStatus);
+
+        Map<String, Long> issueByStatus = allIssues.stream()
+                .filter(issue -> issue.getStatus() != null)
+                .collect(Collectors.groupingBy(
+                        issue -> issue.getStatus().name(),
+                        Collectors.counting()
+                ));
+        chartData.setIssueByStatus(issueByStatus);
 
         List<PriorityEnum> allPriorities = new ArrayList<>();
         allTasks.stream()
@@ -143,9 +132,6 @@ public class ProjectService implements IProjectService {
         allIssues.stream()
                 .filter(issue -> issue.getPriority() != null)
                 .forEach(issue -> allPriorities.add(issue.getPriority()));
-        allQuestions.stream()
-                .filter(question -> question.getPriority() != null)
-                .forEach(question -> allPriorities.add(question.getPriority()));
 
         Map<String, Long> priorityDistribution = allPriorities.stream()
                 .collect(Collectors.groupingBy(
@@ -153,17 +139,25 @@ public class ProjectService implements IProjectService {
                         Collectors.counting()
                 ));
         chartData.setPriorityDistribution(priorityDistribution);
-        long totalTasks = allTasks.size() + allIssues.size() + allQuestions.size();
-        long pendingTasks = tasksByStatus.getOrDefault("PENDING", 0L);
-        long toDoTasks = tasksByStatus.getOrDefault("TODO", 0L);
-        long progressTasks = tasksByStatus.getOrDefault("INPROGRESS", 0L);
-        long doneTasks = tasksByStatus.getOrDefault("DONE", 0L);
 
-        chartData.setTotalTasks(totalTasks);
-        chartData.setPendingTasks(pendingTasks);
-        chartData.setToDoTasks(toDoTasks);
-        chartData.setProgressTasks(progressTasks);
-        chartData.setDoneTasks(doneTasks);
+        chartData.setTotalTasks((long) allTasks.size());
+        chartData.setTotalIssues((long) allIssues.size());
+
+        chartData.setPendingTasks(tasksByStatus.getOrDefault("PENDING", 0L));
+        chartData.setToDoTasks(tasksByStatus.getOrDefault("TODO", 0L));
+        chartData.setInProgressTasks(tasksByStatus.getOrDefault("IN_PROGRESS", 0L));
+        chartData.setWaitingTestTasks(tasksByStatus.getOrDefault("WAITING_TEST", 0L));
+        chartData.setDoneTasks(tasksByStatus.getOrDefault("DONE", 0L));
+
+        // Issue status counts
+        chartData.setOpenIssues(issueByStatus.getOrDefault("OPEN", 0L));
+        chartData.setNotBugIssues(issueByStatus.getOrDefault("NOT_BUG", 0L));
+        chartData.setFixedIssues(issueByStatus.getOrDefault("FIXED", 0L));
+        chartData.setPendingRetestIssues(issueByStatus.getOrDefault("PENDING_RETEST", 0L));
+        chartData.setRetestIssues(issueByStatus.getOrDefault("RETEST", 0L));
+        chartData.setReOpenedIssues(issueByStatus.getOrDefault("RE_OPENED", 0L));
+        chartData.setVerifiedIssues(issueByStatus.getOrDefault("VERIFIED", 0L));
+        chartData.setClosedIssues(issueByStatus.getOrDefault("CLOSED", 0L));
 
         return chartData;
     }
@@ -263,7 +257,9 @@ public class ProjectService implements IProjectService {
 
         ProjectMember isAlreadyMember = projectMemberRepository.findByProjectIdAndMemberId(project.getId(), id, MemberStatusEnum.APPROVED.name()).orElseThrow(()-> new NotFoundException("Không tìm thấy thành viên này trong dự án"));
 
-        projectMemberRepository.delete(isAlreadyMember);
+        isAlreadyMember.setActive(false);
+        isAlreadyMember.setUpdatedAt(LocalDateTime.now());
+        projectMemberRepository.save(isAlreadyMember);
 
         projectActivityLogService.logActivity(project, pmUser, ActivityTypeEnum.REMOVE_MEMBER, "Deleted " + project.getName() + " successfully");
 

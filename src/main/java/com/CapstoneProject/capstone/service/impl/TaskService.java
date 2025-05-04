@@ -489,9 +489,28 @@ public class TaskService implements ITaskService {
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy hồ sơ người dùng này"));
             createdByResponse.setProfile(userProfileMapper.toProfile(createdByProfile));
 
+            GoogleDriveResponse issueAttachmentResponse = null;
+            if (issue.getAttachment() != null && !issue.getAttachment().isEmpty()) {
+                String fileIssueId = googleDriveService.extractFileId(issue.getAttachment());
+                try {
+                    com.google.api.services.drive.model.File driveFile = driveService.files()
+                            .get(fileIssueId)
+                            .setFields("name, webViewLink, webContentLink")
+                            .execute();
+
+                    issueAttachmentResponse = new GoogleDriveResponse();
+                    issueAttachmentResponse.setFileName(driveFile.getName());
+                    issueAttachmentResponse.setFileUrl(driveFile.getWebViewLink());
+                    issueAttachmentResponse.setDownloadUrl(driveFile.getWebContentLink());
+                } catch (IOException e) {
+                    throw new RuntimeException("Lỗi khi lấy thông tin file từ Google Drive cho issue", e);
+                }
+            }
+
             issueResponse.setAssignee(assigneeResponseIssue);
             issueResponse.setReporter(reporterResponseIssue);
             issueResponse.setUser(createdByResponse);
+            issueResponse.setAttachment(issueAttachmentResponse);
             issueResponses.add(issueResponse);
         }
 

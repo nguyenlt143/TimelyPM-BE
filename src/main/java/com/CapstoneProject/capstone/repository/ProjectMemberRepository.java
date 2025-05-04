@@ -15,11 +15,12 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
         SELECT * FROM project_member pm
         WHERE pm.project_id = :projectId
         AND pm.user_id = :userId
+        AND pm.active = true
         LIMIT 1
     """, nativeQuery = true)
     Optional<ProjectMember> findByProjectIdAndUserId(UUID projectId, UUID userId);
 
-    @Query(value = "SELECT * FROM project_member WHERE project_id = :projectId AND id = :memberId AND status = :status", nativeQuery = true)
+    @Query(value = "SELECT * FROM project_member WHERE project_id = :projectId AND id = :memberId AND status = :status AND active = true", nativeQuery = true)
     Optional<ProjectMember> findByProjectIdAndMemberId(@Param("projectId") UUID projectId,
                                                        @Param("memberId") UUID memberId,
                                                        @Param("status") String status);
@@ -28,7 +29,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
     @Query(value = "SELECT * FROM project_member WHERE active = true AND id = :id", nativeQuery = true)
     Optional<ProjectMember> findProjectMember(@Param("id") UUID id);
 
-    @Query(value = "SELECT * FROM project_member WHERE project_id = :projectId AND status = :status", nativeQuery = true)
+    @Query(value = "SELECT * FROM project_member WHERE project_id = :projectId AND status = :status AND active = true", nativeQuery = true)
     List<ProjectMember> findByProjectId(@Param("projectId") UUID projectId,
                                         @Param("status") String status);
 }

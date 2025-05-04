@@ -13,10 +13,21 @@ import java.util.Map;
 @Setter
 public class ChartDataResponse {
     private Map<String, Long> tasksByStatus;
+    private Map<String, Long> issueByStatus;
     private Map<String, Long> priorityDistribution;
     private Long totalTasks;
     private Long pendingTasks;
     private Long toDoTasks;
-    private Long progressTasks;
+    private Long inProgressTasks;
+    private Long waitingTestTasks;
     private Long doneTasks;
+    private Long totalIssues;
+    private Long openIssues;
+    private Long notBugIssues;
+    private Long fixedIssues;
+    private Long pendingRetestIssues;
+    private Long retestIssues;
+    private Long reOpenedIssues;
+    private Long verifiedIssues;
+    private Long closedIssues;
 }

@@ -180,7 +180,7 @@ public class QuestionService implements IQuestionService {
             GetProfileResponse profileResponse = userProfileMapper.toProfile(userProfile);
             userResponse.setProfile(profileResponse);
 
-            User createBy = userRepository.findById(question.getAssignee().getUser().getId())
+            User createBy = userRepository.findById(question.getCreatedBy().getUser().getId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
 
             GetUserResponse createByResponse = userMapper.getUserResponse(createBy);
@@ -224,7 +224,7 @@ public class QuestionService implements IQuestionService {
             throw new ForbiddenException("Bạn không có quyền xem câu hỏi này");
         }
 
-        User createBy = userRepository.findById(question.getAssignee().getUser().getId())
+        User createBy = userRepository.findById(question.getCreatedBy().getUser().getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này"));
         GetUserResponse creatorResponse = userMapper.getUserResponse(createBy);
         UserProfile creatorProfile = profileRepository.findByUserId(createBy.getId())
