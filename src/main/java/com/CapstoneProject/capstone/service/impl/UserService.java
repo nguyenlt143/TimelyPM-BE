@@ -255,15 +255,18 @@ public class UserService implements IUserService {
     private AuthenticateResponse processLogin(FirebaseToken decodedToken) throws FirebaseAuthException {
         Role role = roleRepository.findByName(RoleEnum.USER);
         String email = decodedToken.getEmail();
-        Optional<User> existingUser = userRepository.findByEmail(email);
-
+        String uid = decodedToken.getUid();
+        String fallbackEmail = uid + "@github.com";
+        Optional<User> existingUser = userRepository.findByEmail(
+                email != null ? email : fallbackEmail
+        );
         User user;
         if (existingUser.isPresent()) {
             user = existingUser.orElseThrow(() -> new NotFoundException("Email Not Found"));
         } else {
             String username = email != null ? email.split("@")[0] : "github_user_" + decodedToken.getUid();
             user = new User();
-            user.setEmail(email != null ? email : decodedToken.getUid() + "@github.com");
+            user.setEmail(email != null ? email : fallbackEmail);
             user.setUsername(username);
             user.setRole(role);
             user.setActive(true);
