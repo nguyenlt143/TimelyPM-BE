@@ -259,13 +259,13 @@ public class UserService implements IUserService {
         String email = decodedToken.getEmail();
         String uid = decodedToken.getUid();
         String fallbackEmail = uid + "@github.com";
-        Optional<User> existingUser = userRepository.findByEmail(
-                email != null ? email : fallbackEmail
-        );
+        Optional<User> existingUser = userRepository.findByEmail(email != null ? email : fallbackEmail);
         User user;
-        UserProfile userProfile = new UserProfile();
+        UserProfile userProfile;
+
         if (existingUser.isPresent()) {
             user = existingUser.orElseThrow(() -> new NotFoundException("Email Not Found"));
+            userProfile = userProfileRepository.findByUserId(user.getId()).orElseThrow(() -> new NotFoundException("Profile not found!"));
         } else {
             String username = email != null ? email.split("@")[0] : "github_user_" + decodedToken.getUid();
             user = new User();
@@ -277,7 +277,7 @@ public class UserService implements IUserService {
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
 
-//            userProfile = new UserProfile();
+            userProfile = new UserProfile();
             userProfile.setUser(user);
             userProfile.setFullName(decodedToken.getName());
             userProfile.setAvatarUrl(decodedToken.getPicture());
