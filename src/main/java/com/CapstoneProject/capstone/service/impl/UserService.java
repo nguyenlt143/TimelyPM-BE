@@ -263,6 +263,7 @@ public class UserService implements IUserService {
                 email != null ? email : fallbackEmail
         );
         User user;
+        UserProfile userProfile = new UserProfile();
         if (existingUser.isPresent()) {
             user = existingUser.orElseThrow(() -> new NotFoundException("Email Not Found"));
         } else {
@@ -276,7 +277,7 @@ public class UserService implements IUserService {
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
 
-            UserProfile userProfile = new UserProfile();
+//            userProfile = new UserProfile();
             userProfile.setUser(user);
             userProfile.setFullName(decodedToken.getName());
             userProfile.setAvatarUrl(decodedToken.getPicture());
@@ -292,6 +293,7 @@ public class UserService implements IUserService {
         authenticationResponse.setRole(user.getRole().getName().name());
         authenticationResponse.setId(user.getId());
         authenticationResponse.setUsername(user.getUsername());
+        authenticationResponse.setFullName(userProfile.getFullName());
         return authenticationResponse;
     }
 
