@@ -299,7 +299,7 @@ public class UserService implements IUserService {
 
     @Override
     public Boolean verifyAccount(String email, Integer otp) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailActive(email)
                 .orElseThrow(() -> new NotFoundException("Email không tồn tại!"));
         boolean isValidOtp = otpService.validateOTP(email, otp);
         if (isValidOtp) {

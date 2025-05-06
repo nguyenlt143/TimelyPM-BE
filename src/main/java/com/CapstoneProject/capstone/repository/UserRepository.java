@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByUsername(@Param("username") String username);
     @Query(value = "SELECT * FROM user WHERE email = :email AND active = true", nativeQuery = true)
     Optional<User> findByEmail(String email);
+    @Query(value = "SELECT * FROM user WHERE email = :email", nativeQuery = true)
+    Optional<User> findByEmailActive(String email);
     @Query(value = """
         SELECT u.* FROM project_member pm
         JOIN `user` u ON pm.user_id = u.id
