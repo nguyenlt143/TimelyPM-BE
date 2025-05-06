@@ -1,8 +1,8 @@
 version: '3.8'
 services:
   app:
-    image: tranquoccuong/timelypm-be:latest
-    container_name: TimelyPM
+    image: duongngo21/timelypm:latest
+    container_name: timelypm
     ports:
       - "8080:8080"
     environment:

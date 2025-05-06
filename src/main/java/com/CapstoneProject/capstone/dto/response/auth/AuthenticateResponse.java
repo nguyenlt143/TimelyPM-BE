@@ -17,4 +17,5 @@ public class AuthenticateResponse {
     private String username;
     private String token;
     private String role;
+    private String fullName;
 }

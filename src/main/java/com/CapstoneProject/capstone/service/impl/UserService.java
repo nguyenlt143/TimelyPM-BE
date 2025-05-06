@@ -108,12 +108,14 @@ public class UserService implements IUserService {
         );
         User user = (User) authentication.getPrincipal();
         var jwtToken = jwtService.generateToken(user);
+        UserProfile profile = userProfileRepository.findByUserId(user.getId()).orElseThrow(() -> new NotFoundException("User profile not found"));
 
         AuthenticateResponse response = new AuthenticateResponse();
         response.setToken(jwtToken);
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setRole(user.getRole().getName().name());
+        response.setFullName(profile.getFullName());
         return response;
     }
 
