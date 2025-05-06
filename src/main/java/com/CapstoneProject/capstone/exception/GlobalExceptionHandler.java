@@ -93,11 +93,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<BaseResponse<Void>> handleGeneralException(Exception ex) {
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                .body(new BaseResponse<>("500", "Lỗi máy chủ", null));
-//    }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<BaseResponse<Void>> handleGeneralException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new BaseResponse<>("500", "Lỗi máy chủ", null));
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<BaseResponse<?>> handleIllegalArgumentException(IllegalArgumentException ex) {
